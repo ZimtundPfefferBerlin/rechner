@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gewürz-Umrechner: Teelöffel und Esslöffel in Gramm</title>
+<meta name="description" content="Wie viel Gramm sind ein Teelöffel Zimt, Kurkuma oder Pfeffer? Kostenloser Gewürz-Umrechner von Teelöffel und Esslöffel in Gramm und zurück, mit Tabelle für rund 30 Gewürze und Rohkakao.">
+<style>
+  :root {
+    --paper: #f3f6f1;
+    --sheet: #ffffff;
+    --ink: #14231c;
+    --muted: #586b61;
+    --form: #2a7a54;
+    --form-soft: #d5e6dc;
+    --stamp: #2c3fb0;
+    --good: #1f7a4a;
+    --warn: #9a5800;
+    --font-ui: "Archivo", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-num: "DM Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+      --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+    --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding: 28px 16px 40px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+  header { display: grid; gap: 6px; }
+  h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; text-wrap: balance; }
+  .terms { margin: 0; max-width: 64ch; color: var(--muted); font-size: 15px; }
+  .terms strong { color: var(--ink); font-weight: 600; }
+  .zurueck { font-size: 14px; color: var(--form); text-decoration: none; font-weight: 600; }
+  .zurueck:hover { text-decoration: underline; }
+
+  .grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .panel { background: var(--sheet); border: 1px solid var(--form-soft); border-top: 4px solid var(--form); padding: 20px 20px 22px; min-width: 0; display: grid; gap: 18px; align-content: start; }
+  .panel h2, .field > label, .legend { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--form); }
+  .field { display: grid; gap: 4px; min-width: 0; }
+  select, input[type="text"], input[type="search"], input[type="number"] {
+    width: 100%; min-width: 0; border: 0; border-bottom: 2px solid var(--form); border-radius: 0; background: transparent; color: var(--ink);
+    font-family: var(--font-ui); font-size: 17px; padding: 7px 0 6px; outline: none;
+  }
+  input#menge { font-family: var(--font-num); font-size: 24px; }
+  select option, select optgroup { background: var(--sheet); color: var(--ink); }
+  select:focus-visible, input:focus-visible { border-bottom-color: var(--ink); }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .hint.error { color: var(--warn); font-weight: 600; }
+  fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+  .seg { display: flex; flex-wrap: wrap; border: 1px solid var(--form); width: max-content; max-width: 100%; }
+  .seg label { position: relative; font-size: 15px; font-weight: 600; padding: 7px 16px; cursor: pointer; color: var(--form); border-right: 1px solid var(--form); }
+  .seg label:last-child { border-right: 0; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg label:has(input:checked) { background: var(--form); color: var(--sheet); }
+  .seg label:focus-within, .knopf:focus-visible, a:focus-visible, tbody tr:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .ergebnis .gross { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+  .ergebnis .zahl { font-family: var(--font-num); font-weight: 500; font-size: clamp(34px, 7vw, 48px); line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .ergebnis .wovon { color: var(--muted); font-size: 15px; }
+  .zeilen { display: grid; margin: 0; }
+  .zeilen div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--form-soft); }
+  .zeilen dt { margin: 0; }
+  .zeilen dd { margin: 0; font-family: var(--font-num); white-space: nowrap; }
+  .marke { display: inline-block; width: max-content; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; border: 1px solid currentColor; border-radius: 999px; padding: 1px 9px; color: var(--stamp); }
+  .marke.eigen { color: var(--good); }
+  .knopf { display: inline-block; width: max-content; max-width: 100%; font: inherit; font-weight: 700; font-size: 14px; color: var(--sheet); background: var(--form); border: 1px solid var(--form); border-radius: 3px; padding: 9px 16px; cursor: pointer; text-decoration: none; }
+  .knopf:hover { filter: brightness(1.08); }
+  .knopf.leise { background: transparent; color: var(--form); }
+  .reihe { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .tabelle-rahmen { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom: 8px; }
+  th, td { text-align: right; padding: 8px 6px; border-bottom: 1px solid var(--form-soft); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; padding-left: 0; }
+  thead th { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--form); border-bottom: 2px solid var(--form); }
+  tbody td { font-family: var(--font-num); }
+  tbody td:first-child { font-family: var(--font-ui); }
+  tbody tr.wahl { cursor: pointer; }
+  tbody tr.wahl:hover { background: color-mix(in srgb, var(--form) 8%, transparent); }
+  tbody tr[aria-selected="true"] { background: color-mix(in srgb, var(--form) 13%, transparent); }
+  td .klein { display: block; font-size: 12px; color: var(--muted); font-family: var(--font-ui); }
+  .pflege input { font-family: var(--font-num); font-size: 15px; width: 84px; text-align: right; padding: 4px 0; }
+  .pflege input.breit { width: 120px; text-align: left; font-family: var(--font-ui); }
+
+  .text { display: grid; gap: 10px; max-width: 70ch; }
+  .text h2 { margin: 6px 0 0; font-size: 20px; font-weight: 800; }
+  .text p { margin: 0; }
+  footer { color: var(--muted); font-size: 13px; max-width: 72ch; display: grid; gap: 8px; }
+  footer p { margin: 0; }
+  footer a, .text a { color: var(--form); }
+
+  @media print {
+    body { background: #fff; color: #000; padding: 0; }
+    body.druck > .wrap > :not(#pflege) { display: none; }
+    body.druck #pflege { border: 0; padding: 0; }
+    body.druck #pflege .reihe, body.druck #pflege .nicht-drucken { display: none; }
+    body.druck .pflege input { border: 0; border-bottom: 1px solid #000; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="zurueck" href="index.html">← Alle Werkzeuge</a>
+    <h1>Gewürz-Umrechner</h1>
+    <p class="terms">Wie viel Gramm sind ein Teelöffel Zimt? Und wie viele Teelöffel sind 10 Gramm Kurkuma? Der Umrechner rechnet <strong>Teelöffel, Esslöffel und Gramm</strong> ineinander um, für jedes Gewürz mit seinem eigenen Gewicht.</p>
+  </header>
+
+  <main class="grid">
+    <form class="panel" id="eingaben" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="gewuerz">Gewürz</label>
+        <select id="gewuerz"></select>
+      </div>
+      <div class="field">
+        <label for="menge">Menge</label>
+        <input type="text" id="menge" inputmode="decimal" value="1" aria-describedby="menge-hint">
+        <p class="hint" id="menge-hint">Auch Brüche gehen, zum Beispiel 1/2 oder 1 1/2.</p>
+      </div>
+      <fieldset>
+        <span class="legend" id="einheit-legende">Einheit</span>
+        <div class="seg" role="radiogroup" aria-labelledby="einheit-legende">
+          <label><input type="radio" name="einheit" value="tl" checked>Teelöffel</label>
+          <label><input type="radio" name="einheit" value="el">Esslöffel</label>
+          <label><input type="radio" name="einheit" value="g">Gramm</label>
+        </div>
+      </fieldset>
+      <p class="hint">Gemeint sind gestrichene Löffel: ein Teelöffel fasst 5 ml, ein Esslöffel 15 ml.</p>
+    </form>
+
+    <section class="panel ergebnis" aria-live="polite">
+      <h2 id="erg-titel">Ergebnis</h2>
+      <div class="gross"><span class="zahl" id="erg-zahl">–</span><span class="wovon" id="erg-wovon"></span></div>
+      <dl class="zeilen" id="erg-zeilen"></dl>
+      <div class="reihe"><span class="marke" id="erg-marke"></span><a class="knopf leise" id="erg-link" href="https://zimtundpfeffer.com/" hidden>Im Shop ansehen</a></div>
+      <p class="hint" id="erg-hinweis"></p>
+    </section>
+  </main>
+
+  <section class="panel" aria-labelledby="tab-titel">
+    <h2 id="tab-titel">Alle Gewürze auf einen Blick</h2>
+    <div class="field">
+      <label for="filter">Gewürz suchen</label>
+      <input type="search" id="filter" placeholder="z. B. Zimt, Pfeffer, Kakao">
+    </div>
+    <div class="tabelle-rahmen">
+      <table id="tabelle">
+        <caption>Gewicht je gestrichenem Löffel. Ein Klick auf eine Zeile übernimmt das Gewürz in den Umrechner.</caption>
+        <thead><tr><th scope="col">Gewürz</th><th scope="col">1 TL</th><th scope="col">1 EL</th><th scope="col">10 g sind</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="hint" id="tab-leer" hidden>Dazu haben wir noch keinen Wert. Schreib uns gern, welches Gewürz fehlt.</p>
+  </section>
+
+  <section class="panel pflege" id="pflege" aria-labelledby="pflege-titel" hidden>
+    <h2 id="pflege-titel">Eigene Werte pflegen</h2>
+    <p class="hint nicht-drucken">So wird gewogen: Löffel füllen, mit dem Messerrücken abstreichen, zehn Löffel auf die Waage geben und das Gewicht durch zehn teilen. Eingetragene Werte ersetzen den Richtwert. Sie liegen zunächst nur in diesem Browser. Mit „Werte exportieren“ entsteht die Datei <strong>gewuerz-werte.json</strong>, die neben die Seite hochgeladen wird.</p>
+    <div class="reihe">
+      <button type="button" class="knopf" id="p-export">Werte exportieren</button>
+      <button type="button" class="knopf leise" id="p-import">Werte importieren</button>
+      <button type="button" class="knopf leise" id="p-druck">Wiegeliste drucken</button>
+      <button type="button" class="knopf leise" id="p-leeren">Eigene Eingaben verwerfen</button>
+      <input type="file" id="p-datei" accept="application/json,.json" hidden>
+    </div>
+    <p class="hint" id="p-meldung" role="status"></p>
+    <div class="tabelle-rahmen">
+      <table id="p-tabelle">
+        <thead><tr><th scope="col">Gewürz</th><th scope="col">Richtwert TL</th><th scope="col">Gewogen: g je TL</th><th scope="col">Gewogen: g je EL</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="text">
+    <h2>Warum wiegt jeder Teelöffel anders?</h2>
+    <p>Ein Teelöffel Salz wiegt rund 6 Gramm, ein Teelöffel gerebelter Majoran nicht einmal 1 Gramm. Pulver liegen dichter als Blätter, ganze Körner anders als gemahlene. Auch Mahlgrad und Feuchte spielen mit. Wer Rezepte in Gramm umrechnet oder eine Gewürzmischung nachbaut, braucht deshalb für jedes Gewürz einen eigenen Wert.</p>
+    <p>Die Werte hier sind Richtwerte für gestrichene Löffel. Für sehr kleine Mengen unter einem Gramm, etwa Safran, lohnt sich eine Feinwaage.</p>
+    <h2>Woher kommen die Werte?</h2>
+    <p>Zeilen mit dem Zeichen „Richtwert“ stammen aus der Lebensmitteldatenbank des US-Landwirtschaftsministeriums (USDA FoodData Central). Dort ist ein Teelöffel 4,9 ml groß, der Unterschied zum 5-ml-Löffel ist kleiner als die Streuung beim Abmessen. Zeilen mit „bei uns gewogen“ haben wir bei <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a> mit unseren eigenen Gewürzen nachgewogen.</p>
+  </section>
+
+  <footer>
+    <p>Ein kostenloses Werkzeug von <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a>, dem Gewürzladen in Berlin-Mitte mit Online-Shop für Zimt, Pfeffer, Rohkakao und Gewürzmischungen. Deine Eingaben bleiben in deinem Browser.</p>
+    <p><a href="index.html">Alle Werkzeuge</a> · <a href="https://zimtundpfeffer.com/blogs/rezepte-gewuerzwissen">Rezepte &amp; Gewürzwissen</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+const SHOP = 'https://zimtundpfeffer.com/';
+/* tl / el: Gramm je gestrichenem Tee- bzw. Essloeffel. Quelle der Richtwerte: USDA FoodData Central (SR Legacy).
+   el: null heisst, die Quelle nennt keinen Essloeffel; dann gilt 3 x Teeloeffel. tl: null heisst, der Wert wird noch gewogen. */
+const GEWUERZE = [
+  { id: 'zimt', name: 'Zimt, gemahlen', gruppe: 'Gemahlen', tl: 2.6, el: 7.8, link: 'collections/zimt', suche: 'ceylon königszimt cassia zimtpulver' },
+  { id: 'pfeffer-schwarz-ganz', name: 'Schwarzer Pfeffer, ganz', gruppe: 'Ganz', tl: 2.9, el: null, link: 'collections/pfeffer', suche: 'pfefferkörner kampot tellicherry malabar' },
+  { id: 'pfeffer-schwarz', name: 'Schwarzer Pfeffer, gemahlen', gruppe: 'Gemahlen', tl: 2.3, el: 6.9, link: 'collections/pfeffer', suche: 'kampot tellicherry malabar' },
+  { id: 'pfeffer-weiss', name: 'Weißer Pfeffer, gemahlen', gruppe: 'Gemahlen', tl: 2.4, el: 7.1, link: 'products/weisser-kampot-pfeffer', suche: 'kampot' },
+  { id: 'cayenne', name: 'Cayennepfeffer und Chilipulver', gruppe: 'Gemahlen', tl: 1.8, el: 5.3, link: 'products/cayenne-pfeffer', suche: 'chili scharf' },
+  { id: 'paprika', name: 'Paprikapulver', gruppe: 'Gemahlen', tl: 2.3, el: 6.8, link: 'products/paprika-edelsuess', suche: 'edelsüß geräuchert florina' },
+  { id: 'kurkuma', name: 'Kurkuma, gemahlen', gruppe: 'Gemahlen', tl: 3.0, el: 9.4, link: 'products/kurkuma-pulver-kaufen', suche: 'gelbwurz curcuma' },
+  { id: 'ingwer', name: 'Ingwer, gemahlen', gruppe: 'Gemahlen', tl: 1.8, el: 5.2, link: 'products/ingwer-pulver', suche: 'ingwerpulver' },
+  { id: 'nelken', name: 'Nelken, gemahlen', gruppe: 'Gemahlen', tl: 2.1, el: 6.5, link: 'products/nelken', suche: 'gewürznelken' },
+  { id: 'muskat', name: 'Muskatnuss, gemahlen', gruppe: 'Gemahlen', tl: 2.2, el: 7.0, link: 'products/muskatnuss-pulver', suche: 'muskat' },
+  { id: 'piment', name: 'Piment, gemahlen', gruppe: 'Gemahlen', tl: 1.9, el: 6.0, link: 'products/piment', suche: 'nelkenpfeffer allspice' },
+  { id: 'kardamom', name: 'Kardamom, gemahlen', gruppe: 'Gemahlen', tl: 2.0, el: 5.8, link: 'products/kardamom-saat', suche: 'kardamomsaat grüner kardamom' },
+  { id: 'kreuzkuemmel', name: 'Kreuzkümmel, ganz', gruppe: 'Ganz', tl: 2.1, el: 6.0, link: 'products/kreuzkuemmel', suche: 'cumin kumin' },
+  { id: 'koriander', name: 'Koriandersaat', gruppe: 'Ganz', tl: 1.8, el: 5.0, link: 'products/koriander-koerner', suche: 'korianderkörner' },
+  { id: 'kuemmel', name: 'Kümmel, ganz', gruppe: 'Ganz', tl: 2.1, el: 6.7, link: 'products/kuemmel', suche: '' },
+  { id: 'fenchel', name: 'Fenchelsamen', gruppe: 'Ganz', tl: 2.0, el: 5.8, link: 'products/fenchelsamen-kaufen', suche: 'fenchelsaat' },
+  { id: 'safran', name: 'Safranfäden', gruppe: 'Ganz', tl: 0.7, el: 2.1, link: 'products/safranfaeden', suche: '' },
+  { id: 'lorbeer', name: 'Lorbeerblätter, zerkrümelt', gruppe: 'Kräuter', tl: 0.6, el: 1.8, link: 'products/lorbeerblaetter', suche: 'lorbeer' },
+  { id: 'oregano', name: 'Oregano, gerebelt', gruppe: 'Kräuter', tl: 1.0, el: null, link: 'products/oregano', suche: '' },
+  { id: 'thymian', name: 'Thymian, gerebelt', gruppe: 'Kräuter', tl: 1.0, el: 2.7, link: 'products/thymian', suche: '' },
+  { id: 'rosmarin', name: 'Rosmarin, getrocknet', gruppe: 'Kräuter', tl: 1.2, el: 3.3, link: 'products/rosmarin', suche: '' },
+  { id: 'basilikum', name: 'Basilikum, gerebelt', gruppe: 'Kräuter', tl: 0.7, el: 2.1, link: 'products/basilikum', suche: '' },
+  { id: 'majoran', name: 'Majoran, gerebelt', gruppe: 'Kräuter', tl: 0.6, el: 1.7, link: 'products/majoran', suche: '' },
+  { id: 'minze', name: 'Minze, getrocknet', gruppe: 'Kräuter', tl: 0.5, el: 1.6, link: 'products/pfefferminze', suche: 'pfefferminze' },
+  { id: 'curry', name: 'Currypulver', gruppe: 'Mischungen', tl: 2.0, el: 6.3, link: 'products/madras-curry', suche: 'madras bombay vindaloo' },
+  { id: 'pumpkin', name: 'Pumpkin Spice', gruppe: 'Mischungen', tl: 1.7, el: 5.6, link: 'products/pumpkin-spice', suche: 'kürbisgewürz' },
+  { id: 'rohkakao', name: 'Rohkakao-Pulver', gruppe: 'Kakao und Salz', tl: 1.8, el: 5.4, link: 'products/rohkakaopulver', suche: 'kakao kakaopulver cacao' },
+  { id: 'salz', name: 'Salz, fein', gruppe: 'Kakao und Salz', tl: 6.0, el: 18, link: 'products/italienisches-mittelmeersalz-fein', suche: 'meersalz tafelsalz' },
+  /* Noch ohne Richtwert: erscheinen erst im Umrechner, wenn ein gewogener Wert vorliegt. */
+  { id: 'kreuzkuemmel-gemahlen', name: 'Kreuzkümmel, gemahlen', gruppe: 'Gemahlen', tl: null, el: null, link: 'products/kreuzkuemmelpulver', suche: 'cumin' },
+  { id: 'koriander-gemahlen', name: 'Koriander, gemahlen', gruppe: 'Gemahlen', tl: null, el: null, link: 'products/koriander-pulver', suche: '' },
+  { id: 'bockshornklee', name: 'Bockshornklee, gemahlen', gruppe: 'Gemahlen', tl: null, el: null, link: 'products/bockshornklee-pulver', suche: '' },
+  { id: 'vanille', name: 'Bourbon-Vanille, gemahlen', gruppe: 'Gemahlen', tl: null, el: null, link: 'products/bourbon-vanille-pulver', suche: 'vanillepulver' },
+  { id: 'sumach', name: 'Sumach', gruppe: 'Gemahlen', tl: null, el: null, link: 'products/sumach', suche: '' },
+  { id: 'chiliflocken', name: 'Chiliflocken', gruppe: 'Ganz', tl: null, el: null, link: 'products/chili-flocken-kaufen', suche: 'chili' },
+  { id: 'schwarzkuemmel', name: 'Schwarzkümmel', gruppe: 'Ganz', tl: null, el: null, link: 'products/schwarzkuemmel', suche: 'nigella' },
+  { id: 'wacholder', name: 'Wacholderbeeren', gruppe: 'Ganz', tl: null, el: null, link: 'products/wacholderbeeren', suche: '' },
+  { id: 'garam-masala', name: 'Garam Masala', gruppe: 'Mischungen', tl: null, el: null, link: 'products/garam-masala', suche: '' },
+  { id: 'ras-el-hanout', name: 'Ras el Hanout', gruppe: 'Mischungen', tl: null, el: null, link: 'products/ras-el-hanout', suche: '' },
+  { id: 'gluehwein', name: 'Glühweingewürz', gruppe: 'Mischungen', tl: null, el: null, link: 'products/gluehweingewuerz-kaufen', suche: '' },
+  { id: 'kokosbluetenzucker', name: 'Kokosblütenzucker', gruppe: 'Kakao und Salz', tl: null, el: null, link: 'products/kokosblutenzucker', suche: 'zucker' }
+];
+
+const BRUECHE = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
+
+/* "2,5", "1/2", "1 1/2", "½" -> Zahl; ungueltig -> NaN */
+function leseZahl(text) {
+  let t = String(text == null ? '' : text).trim().replace(/¼/g, ' 1/4').replace(/½/g, ' 1/2').replace(/¾/g, ' 3/4').replace(/\s+/g, ' ').trim();
+  if (!t) return NaN;
+  const gemischt = t.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (gemischt) return +gemischt[3] ? +gemischt[1] + gemischt[2] / gemischt[3] : NaN;
+  const bruch = t.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (bruch) return +bruch[2] ? bruch[1] / bruch[2] : NaN;
+  if (!/^\d*[.,]?\d+$|^\d+[.,]$/.test(t)) return NaN;
+  return parseFloat(t.replace(',', '.'));
+}
+
+function fmtZahl(x, stellen) {
+  return x.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: stellen });
+}
+function fmtGramm(g) {
+  return fmtZahl(g, g < 10 ? 1 : g < 100 ? 1 : 0) + ' g';
+}
+/* Loeffelmenge in Kuechenbruechen: unter 1 auf ⅛ ¼ ⅓ ½ ⅔ ¾, darueber auf Viertel. 3.7 -> "3¾", 0.14 -> "⅛" */
+const KLEIN = [[0.125, '⅛'], [0.25, '¼'], [1 / 3, '⅓'], [0.5, '½'], [2 / 3, '⅔'], [0.75, '¾'], [1, '1']];
+function fmtLoeffel(x) {
+  if (!(x > 0)) return '0';
+  if (x < 0.0625) return 'weniger als ⅛';
+  if (x < 1) return KLEIN.reduce((best, k) => (Math.abs(k[0] - x) < Math.abs(best[0] - x) ? k : best))[1];
+  const v = Math.round(x * 4) / 4;
+  const ganz = Math.floor(v), rest = v - ganz;
+  return fmtZahl(ganz, 0) + (rest ? BRUECHE[rest] : '');
+}
+
+/* Legt eigene Werte ueber die Richtwerte. eigene: { id: { tl, el } } */
+function mitEigenen(liste, eigene) {
+  const e = eigene || {};
+  return liste.map(g => {
+    const w = e[g.id];
+    const tl = w && w.tl > 0 ? w.tl : g.tl;
+    const eigen = !!(w && w.tl > 0);
+    let el = w && w.el > 0 ? w.el : (eigen ? null : g.el);
+    return Object.assign({}, g, { tl, el: el || (tl ? Math.round(tl * 30) / 10 : null), eigen, elGerechnet: !!tl && !el });
+  });
+}
+
+/* Rechnet eine Menge in alle drei Einheiten um. */
+function rechne(g, menge, einheit) {
+  if (!g || !g.tl || !(menge > 0)) return null;
+  const gramm = einheit === 'tl' ? menge * g.tl : einheit === 'el' ? menge * g.el : menge;
+  return { g: gramm, tl: gramm / g.tl, el: gramm / g.el };
+}
+
+/* Prueft eine Wertedatei oder gespeicherte Eingaben und gibt nur gueltige Eintraege zurueck. */
+function pruefeWerte(roh, liste) {
+  const quelle = roh && typeof roh === 'object' ? (roh.werte && typeof roh.werte === 'object' ? roh.werte : roh) : {};
+  const ids = new Set(liste.map(g => g.id));
+  const out = {};
+  for (const id of Object.keys(quelle)) {
+    const w = quelle[id];
+    if (!ids.has(id) || !w || typeof w !== 'object') continue;
+    const tl = Number(w.tl), el = Number(w.el);
+    if (!(tl > 0 && tl < 30)) continue;
+    out[id] = { tl: Math.round(tl * 100) / 100 };
+    if (el > 0 && el < 90) out[id].el = Math.round(el * 100) / 100;
+  }
+  return out;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { GEWUERZE, leseZahl, fmtZahl, fmtGramm, fmtLoeffel, mitEigenen, rechne, pruefeWerte };
+}
+
+if (typeof document !== 'undefined') (function () {
+  const KEY = 'zp.gewuerz.v1', KEY_EIGEN = 'zp.gewuerz.eigen.v1';
+  const $ = id => document.getElementById(id);
+  const pflegeModus = /pflege/.test(location.hash) || /[?&]pflege\b/.test(location.search);
+  let oeffentlich = {};   // aus gewuerz-werte.json neben der Seite
+  let lokal = {};         // Eingaben im Pflegebereich dieses Browsers
+  let liste = [];
+
+  const einheit = () => document.querySelector('input[name="einheit"]:checked').value;
+  const ca = (x, kurz) => { const t = fmtLoeffel(x); return (t.startsWith('weniger') ? '' : '≈ ') + t + ' ' + kurz; };
+
+  function ladeLokal() {
+    try { lokal = pruefeWerte(JSON.parse(localStorage.getItem(KEY_EIGEN) || '{}'), GEWUERZE); } catch (e) { lokal = {}; }
+  }
+  function speichereLokal() {
+    try { localStorage.setItem(KEY_EIGEN, JSON.stringify(lokal)); return true; } catch (e) { return false; }
+  }
+  function baueListe() {
+    liste = mitEigenen(GEWUERZE, Object.assign({}, oeffentlich, pflegeModus ? lokal : {}));
+  }
+  const aktive = () => liste.filter(g => g.tl);
+
+  function fuelleAuswahl(merke) {
+    const sel = $('gewuerz');
+    const vorher = merke || sel.value;
+    sel.textContent = '';
+    const gruppen = [];
+    aktive().forEach(g => { if (!gruppen.includes(g.gruppe)) gruppen.push(g.gruppe); });
+    gruppen.forEach(name => {
+      const og = document.createElement('optgroup'); og.label = name;
+      aktive().filter(g => g.gruppe === name).forEach(g => { const o = document.createElement('option'); o.value = g.id; o.textContent = g.name; og.appendChild(o); });
+      sel.appendChild(og);
+    });
+    if (aktive().some(g => g.id === vorher)) sel.value = vorher;
+  }
+
+  function zeigeErgebnis() {
+    const g = aktive().find(x => x.id === $('gewuerz').value);
+    const menge = leseZahl($('menge').value);
+    const e = einheit();
+    const r = rechne(g, menge, e);
+    const zeilen = $('erg-zeilen');
+    zeilen.textContent = '';
+    $('menge-hint').className = 'hint';
+    $('menge-hint').textContent = 'Auch Brüche gehen, zum Beispiel 1/2 oder 1 1/2.';
+    if (!g) return;
+    $('erg-marke').textContent = g.eigen ? 'bei uns gewogen' : 'Richtwert';
+    $('erg-marke').className = 'marke' + (g.eigen ? ' eigen' : '');
+    const link = $('erg-link');
+    link.hidden = !g.link; link.href = SHOP + (g.link || ''); link.textContent = g.name.split(',')[0] + ' im Shop ansehen';
+    if (!r) {
+      $('erg-zahl').textContent = '–'; $('erg-wovon').textContent = '';
+      $('erg-hinweis').textContent = '';
+      if ($('menge').value.trim()) { $('menge-hint').className = 'hint error'; $('menge-hint').textContent = 'Bitte eine Menge größer als null eintragen, zum Beispiel 2 oder 1/2.'; }
+      return;
+    }
+    const mengeText = (e === 'g' ? fmtZahl(menge, 1) + ' g' : fmtZahl(menge, 2) + ' ' + (e === 'tl' ? 'TL' : 'EL')) + ' ' + g.name;
+    const zeile = (dt, dd) => { const d = document.createElement('div'); const a = document.createElement('dt'); a.textContent = dt; const b = document.createElement('dd'); b.textContent = dd; d.append(a, b); zeilen.appendChild(d); };
+    if (e === 'g') {
+      $('erg-zahl').textContent = ca(r.tl, 'TL');
+      zeile('In Esslöffeln', ca(r.el, 'EL'));
+      zeile('Genau gerechnet', fmtZahl(r.tl, 1) + ' TL');
+    } else {
+      $('erg-zahl').textContent = '≈ ' + fmtGramm(r.g);
+      if (e === 'tl') zeile('In Esslöffeln', ca(r.el, 'EL')); else zeile('In Teelöffeln', ca(r.tl, 'TL'));
+    }
+    $('erg-wovon').textContent = 'für ' + mengeText;
+    zeile('1 TL ' + g.name.split(',')[0], fmtGramm(g.tl));
+    zeile('1 EL ' + g.name.split(',')[0], fmtGramm(g.el) + (g.elGerechnet ? ' (3 TL)' : ''));
+    $('erg-hinweis').textContent = r.g < 1 ? 'Unter einem Gramm misst eine Küchenwaage ungenau. Hier hilft eine Feinwaage oder der Löffel.' : '';
+    try { localStorage.setItem(KEY, JSON.stringify({ id: g.id, menge: $('menge').value, einheit: e })); } catch (err) { /* ohne Speicher weiter */ }
+    document.querySelectorAll('#tabelle tbody tr').forEach(tr => tr.setAttribute('aria-selected', String(tr.dataset.id === g.id)));
+  }
+
+  function zeigeTabelle() {
+    const tb = $('tabelle').tBodies[0];
+    tb.textContent = '';
+    const q = $('filter').value.trim().toLowerCase();
+    let n = 0;
+    aktive().forEach(g => {
+      if (q && !(g.name + ' ' + g.suche).toLowerCase().includes(q)) return;
+      n++;
+      const tr = document.createElement('tr');
+      tr.className = 'wahl'; tr.dataset.id = g.id; tr.tabIndex = 0;
+      tr.setAttribute('aria-selected', String(g.id === $('gewuerz').value));
+      const name = document.createElement('td'); name.textContent = g.name;
+      const art = document.createElement('span'); art.className = 'klein'; art.textContent = g.eigen ? 'bei uns gewogen' : 'Richtwert'; name.appendChild(art);
+      const zelle = t => { const td = document.createElement('td'); td.textContent = t; return td; };
+      tr.append(name, zelle(fmtGramm(g.tl)), zelle(fmtGramm(g.el)), zelle(ca(10 / g.tl, 'TL')));
+      const waehle = () => { $('gewuerz').value = g.id; zeigeErgebnis(); $('eingaben').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+      tr.addEventListener('click', waehle);
+      tr.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); waehle(); } });
+      tb.appendChild(tr);
+    });
+    $('tab-leer').hidden = n > 0;
+  }
+
+  function meldePflege(text) { $('p-meldung').textContent = text || ''; }
+
+  function zeigePflege() {
+    if (!pflegeModus) return;
+    $('pflege').hidden = false;
+    const tb = $('p-tabelle').tBodies[0];
+    tb.textContent = '';
+    GEWUERZE.forEach(g => {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td'); name.textContent = g.name;
+      const stand = oeffentlich[g.id];
+      if (stand) { const s = document.createElement('span'); s.className = 'klein'; s.textContent = 'veröffentlicht: ' + fmtZahl(stand.tl, 2) + ' g je TL'; name.appendChild(s); }
+      const richt = document.createElement('td'); richt.textContent = g.tl ? fmtGramm(g.tl) : 'fehlt';
+      const feld = (art, label) => {
+        const td = document.createElement('td'); const i = document.createElement('input');
+        i.type = 'text'; i.inputMode = 'decimal'; i.setAttribute('aria-label', g.name + ': ' + label);
+        const w = lokal[g.id] && lokal[g.id][art]; i.value = w ? fmtZahl(w, 2) : '';
+        i.addEventListener('change', () => {
+          const x = leseZahl(i.value);
+          const e = Object.assign({}, lokal[g.id]);
+          if (i.value.trim() === '') delete e[art]; else if (x > 0) e[art] = x; else { meldePflege('„' + i.value + '“ ist keine Grammzahl. Bitte so eintragen: 2,6'); i.value = ''; return; }
+          if (e.tl > 0) lokal[g.id] = e; else delete lokal[g.id];
+          lokal = pruefeWerte(lokal, GEWUERZE);
+          const ok = speichereLokal();
+          meldePflege(ok ? (art === 'el' && !(e.tl > 0) ? 'Der Esslöffel-Wert zählt erst, wenn auch ein Teelöffel-Wert eingetragen ist.' : g.name + ' gespeichert.') : 'Dieser Browser speichert die Eingaben gerade nicht. Bitte gleich exportieren.');
+          const merke = $('gewuerz').value;
+          baueListe(); fuelleAuswahl(merke); zeigeTabelle(); zeigeErgebnis();
+        });
+        td.appendChild(i); return td;
+      };
+      tr.append(name, richt, feld('tl', 'Gramm je Teelöffel'), feld('el', 'Gramm je Esslöffel'));
+      tb.appendChild(tr);
+    });
+  }
+
+  function alles(merke) { baueListe(); fuelleAuswahl(merke); zeigeTabelle(); zeigeErgebnis(); zeigePflege(); }
+
+  // ---------- Start ----------
+  ladeLokal();
+  let start = null;
+  try { start = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { start = null; }
+  if (start && typeof start === 'object') {
+    if (typeof start.menge === 'string' && leseZahl(start.menge) > 0) $('menge').value = start.menge;
+    const r = document.querySelector('input[name="einheit"][value="' + (['tl', 'el', 'g'].includes(start.einheit) ? start.einheit : 'tl') + '"]');
+    if (r) r.checked = true;
+  }
+  alles(start && start.id);
+
+  // Veroeffentlichte eigene Werte liegen als Datei neben der Seite; fehlt sie, bleiben die Richtwerte.
+  if (location.protocol === 'http:' || location.protocol === 'https:') {
+    fetch('gewuerz-werte.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!j) return;
+      oeffentlich = pruefeWerte(j, GEWUERZE);
+      if (Object.keys(oeffentlich).length) alles($('gewuerz').value);
+    }).catch(() => { /* Richtwerte bleiben */ });
+  }
+
+  $('gewuerz').addEventListener('change', zeigeErgebnis);
+  $('menge').addEventListener('input', zeigeErgebnis);
+  document.querySelectorAll('input[name="einheit"]').forEach(r => r.addEventListener('change', zeigeErgebnis));
+  $('filter').addEventListener('input', zeigeTabelle);
+  $('eingaben').addEventListener('submit', ev => ev.preventDefault());
+
+  if (pflegeModus) {
+    $('p-export').addEventListener('click', () => {
+      const werte = Object.assign({}, oeffentlich, lokal);
+      const n = Object.keys(werte).length;
+      if (!n) { meldePflege('Es ist noch kein eigener Wert eingetragen.'); return; }
+      try {
+        const blob = new Blob([JSON.stringify({ version: 1, stand: new Date().toISOString().slice(0, 10), werte }, null, 2) + '\n'], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gewuerz-werte.json';
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+        meldePflege(n + (n === 1 ? ' Wert' : ' Werte') + ' exportiert. Die Datei gewuerz-werte.json liegt im Download-Ordner und ersetzt die gleichnamige Datei neben der Seite.');
+      } catch (e) { meldePflege('Der Export hat hier nicht geklappt.'); }
+    });
+    $('p-import').addEventListener('click', () => $('p-datei').click());
+    $('p-datei').addEventListener('change', async () => {
+      const f = $('p-datei').files[0]; $('p-datei').value = '';
+      if (!f) return;
+      try {
+        const neu = pruefeWerte(JSON.parse(await f.text()), GEWUERZE);
+        const n = Object.keys(neu).length;
+        if (!n) { meldePflege('In der Datei stehen keine gültigen Werte.'); return; }
+        lokal = Object.assign({}, lokal, neu); speichereLokal(); alles($('gewuerz').value);
+        meldePflege(n + (n === 1 ? ' Wert' : ' Werte') + ' aus der Datei übernommen.');
+      } catch (e) { meldePflege('Die Datei ließ sich nicht lesen.'); }
+    });
+    $('p-druck').addEventListener('click', () => { document.body.classList.add('druck'); window.print(); });
+    window.addEventListener('afterprint', () => document.body.classList.remove('druck'));
+    $('p-leeren').addEventListener('click', () => {
+      if (!Object.keys(lokal).length) { meldePflege('Es gibt keine eigenen Eingaben in diesem Browser.'); return; }
+      const sicherung = lokal;
+      lokal = {}; speichereLokal(); alles($('gewuerz').value);
+      meldePflege('Eigene Eingaben verworfen. ');
+      const zurueck = document.createElement('button'); zurueck.type = 'button'; zurueck.className = 'knopf leise'; zurueck.textContent = 'Rückgängig';
+      zurueck.addEventListener('click', () => { lokal = sicherung; speichereLokal(); alles($('gewuerz').value); meldePflege('Eingaben wiederhergestellt.'); });
+      $('p-meldung').appendChild(zurueck);
+    });
+  }
+})();
+</script>
+</body>
+</html>
