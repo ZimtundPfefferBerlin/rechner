@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gewürz-Finder: Welches Gewürz passt wozu?</title>
+<meta name="description" content="Welches Gewürz passt zu Kürbis, Linsen, Lamm oder Apfelkuchen? Der Gewürz-Finder zeigt passende Gewürze für über 40 Zutaten und Gerichte und nennt zu jedem Gewürz Charakter und Hauptaromastoffe.">
+<style>
+  :root {
+    --paper: #f3f6f1;
+    --sheet: #ffffff;
+    --ink: #14231c;
+    --muted: #586b61;
+    --form: #2a7a54;
+    --form-soft: #d5e6dc;
+    --stamp: #2c3fb0;
+    --good: #1f7a4a;
+    --warn: #9a5800;
+    --font-ui: "Archivo", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-num: "DM Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+      --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+    --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding: 28px 16px 40px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+  header { display: grid; gap: 6px; }
+  h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; text-wrap: balance; }
+  .terms { margin: 0; max-width: 64ch; color: var(--muted); font-size: 15px; }
+  .terms strong { color: var(--ink); font-weight: 600; }
+  .zurueck { font-size: 14px; color: var(--form); text-decoration: none; font-weight: 600; }
+  .zurueck:hover { text-decoration: underline; }
+
+  .panel { background: var(--sheet); border: 1px solid var(--form-soft); border-top: 4px solid var(--form); padding: 20px 20px 22px; min-width: 0; display: grid; gap: 16px; align-content: start; }
+  .panel > h2, .legend, .field > label, .klein-titel { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--form); }
+  .seg { display: flex; flex-wrap: wrap; border: 1px solid var(--form); width: max-content; max-width: 100%; }
+  .seg label { position: relative; font-size: 15px; font-weight: 600; padding: 8px 18px; cursor: pointer; color: var(--form); border-right: 1px solid var(--form); }
+  .seg label:last-child { border-right: 0; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg label:has(input:checked) { background: var(--form); color: var(--sheet); }
+  .seg label:focus-within, .chip:focus-visible, .knopf:focus-visible, a:focus-visible, .wort:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .field { display: grid; gap: 4px; min-width: 0; max-width: 420px; }
+  input[type="search"] { width: 100%; border: 0; border-bottom: 2px solid var(--form); border-radius: 0; background: transparent; color: var(--ink); font-family: var(--font-ui); font-size: 17px; padding: 7px 0 6px; outline: none; }
+  input[type="search"]:focus-visible { border-bottom-color: var(--ink); }
+  #auswahl { display: grid; gap: 16px; }
+  .gruppe { display: grid; gap: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: inherit; font-size: 14px; color: var(--form); background: transparent; border: 1px solid var(--form); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .chip:hover { background: color-mix(in srgb, var(--form) 12%, transparent); }
+  .chip[aria-pressed="true"] { background: var(--form); color: var(--sheet); }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .ergebnis h2 { margin: 0; font-size: clamp(24px, 4vw, 32px); font-weight: 800; line-height: 1.1; letter-spacing: 0; text-transform: none; color: var(--ink); }
+  .ergebnis .tipp { margin: 0; max-width: 66ch; font-size: 16px; border-left: 3px solid var(--form); padding-left: 12px; }
+  .karten { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .karten li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--form-soft); }
+  .karten li:first-child { border-top: 1px solid var(--form-soft); }
+  .karten .name { font: inherit; font-size: 18px; font-weight: 700; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: var(--form-soft); text-underline-offset: 3px; }
+  .karten .name:hover { text-decoration-color: var(--form); }
+  .karten .art { color: var(--muted); font-size: 14px; }
+  .karten .stoffe { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+  .karten .stoffe b { font-weight: 600; color: var(--ink); }
+  .shoplink { font-size: 14px; font-weight: 600; color: var(--form); white-space: nowrap; }
+  .steckbrief { display: grid; gap: 0; margin: 0; }
+  .steckbrief > div { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--form-soft); }
+  @media (max-width: 560px) { .steckbrief > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+  .steckbrief dt { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--form); padding-top: 3px; }
+  .steckbrief dd { margin: 0; }
+  .stoff { display: block; padding: 3px 0; }
+  .stoff b { font-weight: 700; }
+  .stoff .wie { color: var(--muted); }
+  .stoff .auch { display: block; font-size: 13px; color: var(--muted); }
+  .wort { font: inherit; color: var(--form); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .knopf { display: inline-block; width: max-content; max-width: 100%; font: inherit; font-weight: 700; font-size: 14px; color: var(--sheet); background: var(--form); border: 1px solid var(--form); border-radius: 3px; padding: 9px 16px; cursor: pointer; text-decoration: none; }
+  .knopf:hover { filter: brightness(1.08); }
+  .reihe { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .text { display: grid; gap: 10px; max-width: 70ch; }
+  .text h2 { margin: 6px 0 0; font-size: 20px; font-weight: 800; }
+  .text p { margin: 0; }
+  footer { color: var(--muted); font-size: 13px; max-width: 72ch; display: grid; gap: 8px; }
+  footer p { margin: 0; }
+  footer a, .text a { color: var(--form); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="zurueck" href="index.html">← Alle Werkzeuge</a>
+    <h1>Gewürz-Finder</h1>
+    <p class="terms">Welches Gewürz passt zu Kürbis, Linsen oder Apfelkuchen? Wähle eine <strong>Zutat</strong> und sieh, was dazu passt. Oder wähle ein <strong>Gewürz</strong> und erfahre, wie es schmeckt, welche Aromastoffe es prägen und wozu es passt.</p>
+  </header>
+
+  <section class="panel" aria-label="Auswahl">
+    <div class="seg" role="radiogroup" aria-label="Wonach suchst du?">
+      <label><input type="radio" name="sicht" value="zutat" checked>Nach Zutat</label>
+      <label><input type="radio" name="sicht" value="gewuerz">Nach Gewürz</label>
+    </div>
+    <div class="field">
+      <label for="suche" id="suche-label">Zutat suchen</label>
+      <input type="search" id="suche" placeholder="z. B. Kürbis, Lamm, Kaffee">
+    </div>
+    <div id="auswahl"></div>
+    <p class="hint" id="auswahl-leer" hidden>Dazu haben wir noch nichts. Probier einen anderen Begriff.</p>
+  </section>
+
+  <section class="panel ergebnis" id="ergebnis" aria-live="polite" hidden></section>
+
+  <section class="text">
+    <h2>Woher kommt der Geschmack?</h2>
+    <p>Die meisten Gewürze verdanken ihren Duft ätherischen Ölen. Das sind Gemische aus vielen Aromastoffen, von denen einige wenige den Charakter bestimmen: Zimtaldehyd beim Zimt, Eugenol bei der Nelke, Linalool beim Koriander. Gewürze, die einen Aromastoff teilen, harmonieren oft besonders gut. Deshalb zeigt der Finder bei jedem Stoff, in welchen anderen Gewürzen er ebenfalls steckt.</p>
+    <p>Die Angaben nennen die prägenden Bestandteile. Wie viel davon enthalten ist, schwankt mit Herkunft, Sorte und Ernte. Schärfe und Farbe kommen meist von anderen Stoffen als den ätherischen Ölen, sie sind getrennt aufgeführt.</p>
+    <p>Der Finder beschreibt Geschmack und Zusammensetzung. Er macht keine Aussagen zur Wirkung auf die Gesundheit.</p>
+  </section>
+
+  <footer>
+    <p>Ein kostenloses Werkzeug von <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a>, dem Gewürzladen in Berlin-Mitte mit Online-Shop für Zimt, Pfeffer, Rohkakao und Gewürzmischungen.</p>
+    <p><a href="index.html">Alle Werkzeuge</a> · <a href="gewuerz-umrechner.html">Gewürz-Umrechner</a> · <a href="https://zimtundpfeffer.com/blogs/rezepte-gewuerzwissen">Rezepte &amp; Gewürzwissen</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+const SHOP = 'https://zimtundpfeffer.com/';
+
+/* Aromastoffe und wie sie riechen. */
+const STOFFE = {
+  'Zimtaldehyd': 'zimtig, süß-warm', 'Eugenol': 'nelkenartig, warm', 'Eugenylacetat': 'mild nelkenartig, fruchtig', 'Methyleugenol': 'süß-würzig, nelkenartig',
+  'Linalool': 'blumig, frisch', 'Linalylacetat': 'blumig, fruchtig', 'Limonen': 'zitrusartig', 'Citral': 'zitronig, frisch',
+  '1,8-Cineol': 'eukalyptusartig, kühl', 'Campher': 'kampferartig, kühl-scharf', 'α-Pinen': 'kiefernartig, harzig', 'β-Pinen': 'harzig, holzig',
+  'Sabinen': 'holzig, pfeffrig', 'Myrcen': 'balsamisch, harzig', 'β-Caryophyllen': 'holzig, würzig', 'α-Phellandren': 'pfeffrig, zitrisch',
+  'Thymol': 'kräftig krautig, warm', 'Carvacrol': 'würzig, herb-warm', 'p-Cymol': 'würzig, leicht zitrisch', 'γ-Terpinen': 'krautig, zitrisch',
+  'Terpinen-4-ol': 'würzig, erdig', 'cis-Sabinenhydrat': 'frisch krautig, typisch Majoran', 'α-Terpinylacetat': 'blumig, süß-krautig',
+  'trans-Anethol': 'süß, anisartig', 'Estragol': 'anisartig, krautig', 'Fenchon': 'kampferartig, leicht bitter', 'Carvon': 'kümmelartig, würzig',
+  'Cuminaldehyd': 'warm, erdig-würzig', 'Menthol': 'kühl, frisch', 'Menthon': 'minzig, frisch', 'Zingiberen': 'würzig, frisch-ingwerartig',
+  'β-Bisabolen': 'balsamisch, warm', 'Turmerone': 'erdig, würzig', 'Myristicin': 'warm, würzig-harzig', 'Thymochinon': 'pfeffrig, herb',
+  'Safranal': 'heuartig, herb-würzig', 'Vanillin': 'süß, vanillig', 'Sotolon': 'kräftig würzig, erinnert an Liebstöckel'
+};
+
+/* art: Charakter in Worten. oele: praegende Aromastoffe des aetherischen Oels. auch: Schaerfe, Farbe oder Saeure aus anderen Stoffen. */
+const GEWUERZE = [
+  { id: 'zimt', name: 'Zimt', link: 'collections/zimt', art: 'warm, süß, holzig', oele: ['Zimtaldehyd', 'Eugenol', 'Linalool'] },
+  { id: 'zimtblueten', name: 'Zimtblüten', link: 'products/zimtblueten', art: 'zimtig, blumig, leicht pfeffrig', oele: ['Zimtaldehyd'] },
+  { id: 'pfeffer', name: 'Schwarzer Pfeffer', link: 'collections/pfeffer', art: 'scharf, holzig, leicht zitrisch', oele: ['β-Caryophyllen', 'Limonen', 'Sabinen', 'α-Pinen'], auch: 'Die Schärfe kommt vom Piperin.' },
+  { id: 'pfeffer-weiss', name: 'Weißer Pfeffer', link: 'products/weisser-kampot-pfeffer', art: 'scharf, erdig, weniger fruchtig als schwarzer', oele: ['β-Caryophyllen', 'Limonen'], auch: 'Die Schärfe kommt vom Piperin.' },
+  { id: 'rosa-beeren', name: 'Rosa Beeren', link: 'products/rosa-beeren', art: 'süßlich, harzig, mild pfeffrig', oele: ['α-Phellandren', 'Limonen', 'α-Pinen'] },
+  { id: 'szechuan', name: 'Szechuanpfeffer', link: 'products/szechuan-pfeffer', art: 'zitrisch, blumig, prickelnd', oele: ['Limonen', 'Linalool'], auch: 'Das Prickeln auf der Zunge kommt von den Sanshoolen.' },
+  { id: 'cayenne', name: 'Cayennepfeffer', link: 'products/cayenne-pfeffer', art: 'scharf, leicht fruchtig', oele: [], auch: 'Die Schärfe kommt vom Capsaicin.' },
+  { id: 'chiliflocken', name: 'Chiliflocken', link: 'products/chili-flocken-kaufen', art: 'scharf, fruchtig', oele: [], auch: 'Die Schärfe kommt vom Capsaicin.' },
+  { id: 'chipotle', name: 'Chipotle', link: 'products/chipotle-chili', art: 'rauchig, scharf, fruchtig', oele: [], auch: 'Die Schärfe kommt vom Capsaicin, das Raucharoma vom Räuchern der Schoten.' },
+  { id: 'paprika', name: 'Paprika edelsüß', link: 'products/paprika-edelsuess', art: 'mild, süßlich, fruchtig', oele: [], auch: 'Die rote Farbe kommt von Carotinoiden.' },
+  { id: 'paprika-rauch', name: 'Geräucherte Paprika', link: 'products/paprika-geraeuchert-scharf', art: 'rauchig, kräftig, scharf', oele: [], auch: 'Das Raucharoma entsteht beim Trocknen über Holzfeuer.' },
+  { id: 'kurkuma', name: 'Kurkuma', link: 'products/kurkuma-pulver-kaufen', art: 'erdig, warm, leicht bitter', oele: ['Turmerone', 'Zingiberen'], auch: 'Die gelbe Farbe kommt vom Curcumin.' },
+  { id: 'ingwer', name: 'Ingwer', link: 'products/ingwer-pulver', art: 'scharf, zitrisch, warm', oele: ['Zingiberen', 'β-Bisabolen', 'Citral'], auch: 'Die Schärfe kommt von Gingerolen und Shogaolen.' },
+  { id: 'galgant', name: 'Galgant', link: 'products/galgant-pulver', art: 'scharf, kampferartig, zitrisch', oele: ['1,8-Cineol'] },
+  { id: 'nelken', name: 'Nelken', link: 'products/nelken', art: 'intensiv, süß-würzig, warm', oele: ['Eugenol', 'Eugenylacetat', 'β-Caryophyllen'] },
+  { id: 'muskat', name: 'Muskatnuss', link: 'products/muskatnuss-ganz', art: 'warm, nussig, süßlich-harzig', oele: ['Sabinen', 'α-Pinen', 'β-Pinen', 'Myristicin'] },
+  { id: 'piment', name: 'Piment', link: 'products/piment', art: 'wie Nelke, Zimt und Pfeffer zugleich', oele: ['Eugenol', 'Methyleugenol', 'β-Caryophyllen'] },
+  { id: 'kardamom', name: 'Grüner Kardamom', link: 'products/gruener-kardamom', art: 'frisch, blumig, eukalyptusartig', oele: ['α-Terpinylacetat', '1,8-Cineol', 'Linalool'] },
+  { id: 'kardamom-schwarz', name: 'Schwarzer Kardamom', link: 'products/schwarzer-kardamom', art: 'rauchig, kampferartig, herb', oele: ['1,8-Cineol'], auch: 'Das Raucharoma entsteht beim Trocknen über Feuer.' },
+  { id: 'sternanis', name: 'Sternanis', link: 'products/sternanis', art: 'süß, lakritzartig, warm', oele: ['trans-Anethol'] },
+  { id: 'kreuzkuemmel', name: 'Kreuzkümmel', link: 'products/kreuzkuemmel', art: 'erdig, warm, leicht bitter', oele: ['Cuminaldehyd', 'γ-Terpinen', 'β-Pinen'] },
+  { id: 'koriander', name: 'Koriandersaat', link: 'products/koriander-koerner', art: 'zitrisch, blumig, nussig', oele: ['Linalool', 'γ-Terpinen', 'α-Pinen'] },
+  { id: 'kuemmel', name: 'Kümmel', link: 'products/kuemmel', art: 'kräftig, warm, leicht scharf', oele: ['Carvon', 'Limonen'] },
+  { id: 'fenchel', name: 'Fenchelsamen', link: 'products/fenchelsamen-kaufen', art: 'süß, anisartig, frisch', oele: ['trans-Anethol', 'Fenchon', 'Estragol'] },
+  { id: 'schwarzkuemmel', name: 'Schwarzkümmel', link: 'products/schwarzkuemmel', art: 'nussig, pfeffrig, leicht bitter', oele: ['Thymochinon', 'p-Cymol'] },
+  { id: 'bockshornklee', name: 'Bockshornklee', link: 'products/bockshornklee-pulver', art: 'herb, nussig, kräftig würzig', oele: ['Sotolon'] },
+  { id: 'wacholder', name: 'Wacholderbeeren', link: 'products/wacholderbeeren', art: 'harzig, waldig, leicht süß', oele: ['α-Pinen', 'Myrcen', 'Sabinen'] },
+  { id: 'lorbeer', name: 'Lorbeer', link: 'products/lorbeerblaetter', art: 'herb, würzig, leicht bitter', oele: ['1,8-Cineol', 'α-Terpinylacetat', 'Linalool'] },
+  { id: 'safran', name: 'Safran', link: 'products/safranfaeden', art: 'herb-blumig, honigartig', oele: ['Safranal'], auch: 'Die gelbe Farbe kommt vom Crocin, die feine Bitternote vom Picrocrocin.' },
+  { id: 'vanille', name: 'Vanille', link: 'products/bourbon-vanille-pulver', art: 'süß, cremig, blumig', oele: ['Vanillin'] },
+  { id: 'sumach', name: 'Sumach', link: 'products/sumach', art: 'säuerlich, fruchtig, frisch', oele: [], auch: 'Die Säure kommt vor allem von Äpfelsäure.' },
+  { id: 'oregano', name: 'Oregano', link: 'products/oregano', art: 'herb, kräftig, pfeffrig', oele: ['Carvacrol', 'Thymol', 'p-Cymol'] },
+  { id: 'thymian', name: 'Thymian', link: 'products/thymian', art: 'herb, warm, harzig', oele: ['Thymol', 'Carvacrol', 'p-Cymol'] },
+  { id: 'rosmarin', name: 'Rosmarin', link: 'products/rosmarin', art: 'harzig, kiefernartig, kampferartig', oele: ['1,8-Cineol', 'Campher', 'α-Pinen'] },
+  { id: 'basilikum', name: 'Basilikum', link: 'products/basilikum', art: 'süßlich, pfeffrig, leicht anisartig', oele: ['Linalool', 'Estragol', 'Eugenol'] },
+  { id: 'majoran', name: 'Majoran', link: 'products/majoran', art: 'mild, blumig, süß-würzig', oele: ['Terpinen-4-ol', 'cis-Sabinenhydrat', 'γ-Terpinen'] },
+  { id: 'minze', name: 'Pfefferminze', link: 'products/pfefferminze', art: 'frisch, kühl, leicht süß', oele: ['Menthol', 'Menthon'] },
+  { id: 'lavendel', name: 'Lavendelblüten', link: 'products/lavendelblueten', art: 'blumig, leicht herb', oele: ['Linalool', 'Linalylacetat'] },
+  { id: 'zitronenmyrte', name: 'Zitronenmyrte', link: 'products/zitronenmyrte', art: 'intensiv zitronig, frisch', oele: ['Citral'] },
+  { id: 'rohkakao', name: 'Rohkakao', link: 'products/rohkakaopulver', art: 'herb, schokoladig, leicht fruchtig', oele: [] },
+  { id: 'curry', name: 'Currypulver', link: 'products/madras-curry', art: 'würzig, warm, je nach Sorte scharf', oele: [], mischung: true },
+  { id: 'garam-masala', name: 'Garam Masala', link: 'products/garam-masala', art: 'warm, süß-würzig, aromatisch', oele: [], mischung: true },
+  { id: 'ras-el-hanout', name: 'Ras el Hanout', link: 'products/ras-el-hanout', art: 'vielschichtig, warm, blumig', oele: [], mischung: true },
+  { id: 'pumpkin-spice', name: 'Pumpkin Spice', link: 'products/pumpkin-spice', art: 'warm, süß, zimtbetont', oele: [], mischung: true },
+  { id: 'gluehwein', name: 'Glühweingewürz', link: 'products/gluehweingewuerz-kaufen', art: 'warm, süß-würzig, festlich', oele: [], mischung: true },
+  { id: 'zahtar', name: 'Zahtar', link: 'products/zahtar', art: 'krautig, nussig, säuerlich', oele: [], mischung: true },
+  { id: 'harissa', name: 'Harissa', link: 'products/harissa', art: 'scharf, warm, leicht rauchig', oele: [], mischung: true },
+  { id: 'kraeuter-provence', name: 'Kräuter der Provence', link: 'products/kraeuter-der-provence', art: 'krautig, harzig, mediterran', oele: [], mischung: true }
+];
+
+/* gewuerze: die wichtigsten zuerst. */
+const ZUTATEN = [
+  { id: 'kuerbis', name: 'Kürbis', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['muskat', 'zimt', 'ingwer', 'kreuzkuemmel', 'chiliflocken', 'curry', 'pumpkin-spice'], tipp: 'Die Süße von Hokkaido und Butternut verträgt warme Gewürze. In die Suppe passen Ingwer und Curry, aufs Ofengemüse Kreuzkümmel und Chili.' },
+  { id: 'kartoffeln', name: 'Kartoffeln', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['muskat', 'kuemmel', 'rosmarin', 'majoran', 'paprika', 'thymian', 'kurkuma', 'pfeffer'], tipp: 'Muskat gehört ins Püree, Kümmel und Majoran zu Bratkartoffeln, Rosmarin und Paprika zu Kartoffeln aus dem Ofen.' },
+  { id: 'karotten', name: 'Karotten', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kreuzkuemmel', 'koriander', 'ingwer', 'zimt', 'fenchel', 'kardamom', 'ras-el-hanout'], tipp: 'Karotten sind süß und nehmen erdige wie zitrische Gewürze gut an. Kreuzkümmel und Koriander zusammen sind der Klassiker.' },
+  { id: 'tomaten', name: 'Tomaten', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['basilikum', 'oregano', 'thymian', 'lorbeer', 'chiliflocken', 'paprika-rauch', 'pfeffer', 'zimt'], tipp: 'Zur frischen Tomate passt Basilikum, in die gekochte Sauce Oregano, Thymian und Lorbeer. Eine Prise Zimt rundet lang gekochte Saucen ab.' },
+  { id: 'blumenkohl', name: 'Blumenkohl und Brokkoli', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kurkuma', 'kreuzkuemmel', 'muskat', 'curry', 'schwarzkuemmel', 'paprika', 'garam-masala'], tipp: 'Mild im Eigengeschmack, deshalb dankbar für kräftige Gewürze. Im Ofen mit Kurkuma und Kreuzkümmel, in heller Sauce mit Muskat.' },
+  { id: 'rote-bete', name: 'Rote Bete', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kuemmel', 'kreuzkuemmel', 'koriander', 'nelken', 'piment', 'wacholder', 'sumach'], tipp: 'Das Erdige der Roten Bete fangen Kümmel und Kreuzkümmel auf. Sumach bringt Säure, wenn kein Essig dazukommt.' },
+  { id: 'kohl', name: 'Kohl, Rotkohl und Sauerkraut', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kuemmel', 'wacholder', 'lorbeer', 'nelken', 'piment', 'zimt', 'pfeffer'], tipp: 'Kümmel und Wacholder gehören ins Sauerkraut, Nelken, Lorbeer und etwas Zimt in den Rotkohl.' },
+  { id: 'spinat', name: 'Spinat und Mangold', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['muskat', 'pfeffer', 'kreuzkuemmel', 'bockshornklee', 'chiliflocken', 'garam-masala'], tipp: 'Muskat ist der Klassiker. Für die indische Richtung passen Kreuzkümmel, Bockshornklee und Garam Masala.' },
+  { id: 'aubergine', name: 'Aubergine', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kreuzkuemmel', 'paprika-rauch', 'koriander', 'zahtar', 'sumach', 'harissa', 'oregano', 'zimt'], tipp: 'Aubergine saugt Aromen auf. Geräucherte Paprika und Kreuzkümmel geben Tiefe, Sumach und Zahtar Frische.' },
+  { id: 'zucchini', name: 'Zucchini und Paprikagemüse', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['thymian', 'oregano', 'basilikum', 'kraeuter-provence', 'minze', 'chiliflocken', 'zahtar'], tipp: 'Sommergemüse mag mediterrane Kräuter. Getrocknete Minze passt überraschend gut zu gebratener Zucchini.' },
+  { id: 'pilze', name: 'Pilze', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['thymian', 'pfeffer', 'wacholder', 'rosmarin', 'paprika-rauch', 'muskat', 'lorbeer'], tipp: 'Thymian und frisch gemahlener Pfeffer genügen oft. Wacholder betont das Waldige.' },
+  { id: 'linsen', name: 'Linsen und Dal', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kreuzkuemmel', 'kurkuma', 'koriander', 'ingwer', 'garam-masala', 'curry', 'lorbeer', 'chiliflocken', 'kardamom-schwarz'], tipp: 'Kreuzkümmel, Kurkuma und Koriander sind die Basis für jedes Dal. Garam Masala kommt erst am Ende dazu.' },
+  { id: 'kichererbsen', name: 'Kichererbsen und Hummus', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kreuzkuemmel', 'paprika-rauch', 'koriander', 'sumach', 'zahtar', 'ras-el-hanout', 'harissa'], tipp: 'In den Hummus gehört Kreuzkümmel, obenauf Sumach oder Zahtar. Geröstete Kichererbsen vertragen geräucherte Paprika.' },
+  { id: 'bohnen', name: 'Bohnen und Chili', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['kreuzkuemmel', 'chipotle', 'paprika-rauch', 'oregano', 'koriander', 'zimt', 'rohkakao', 'lorbeer'], tipp: 'Kreuzkümmel und Chipotle tragen ein Chili. Ein Löffel Rohkakao und eine Prise Zimt machen es runder.' },
+  { id: 'reis', name: 'Reis', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['safran', 'kardamom', 'zimt', 'nelken', 'lorbeer', 'kurkuma', 'kreuzkuemmel', 'sternanis', 'kardamom-schwarz'], tipp: 'Ganze Gewürze im Kochwasser parfümieren den Reis: Kardamom, Zimtstange, Nelken und Lorbeer. Safran oder Kurkuma färben.' },
+  { id: 'eier', name: 'Eier', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['pfeffer', 'paprika', 'kurkuma', 'muskat', 'chiliflocken', 'zahtar', 'schwarzkuemmel'], tipp: 'Pfeffer und Paprika gehen immer. Zahtar oder Schwarzkümmel machen aus dem Spiegelei etwas Besonderes.' },
+  { id: 'kaese', name: 'Käse, Feta und Quark', gruppe: 'Gemüse und Hülsenfrüchte', gewuerze: ['pfeffer', 'thymian', 'rosa-beeren', 'zahtar', 'schwarzkuemmel', 'kuemmel', 'chiliflocken', 'oregano'], tipp: 'Zu Ziegenkäse passen Thymian und Rosa Beeren, zu Feta Oregano und Zahtar, in den Kräuterquark Kümmel und Pfeffer.' },
+
+  { id: 'rind', name: 'Rind und Steak', gruppe: 'Fleisch und Fisch', gewuerze: ['pfeffer', 'wacholder', 'lorbeer', 'thymian', 'rosmarin', 'piment', 'paprika-rauch', 'szechuan'], tipp: 'Aufs Steak kommt nach dem Braten grob gemahlener Pfeffer. In den Schmorbraten gehören Lorbeer, Wacholder und Piment.' },
+  { id: 'hack', name: 'Hackfleisch', gruppe: 'Fleisch und Fisch', gewuerze: ['paprika', 'kreuzkuemmel', 'oregano', 'majoran', 'piment', 'zimt', 'chiliflocken', 'muskat'], tipp: 'Majoran und Paprika für die Frikadelle, Oregano für die Bolognese, Kreuzkümmel, Piment und Zimt für die orientalische Richtung.' },
+  { id: 'lamm', name: 'Lamm', gruppe: 'Fleisch und Fisch', gewuerze: ['kreuzkuemmel', 'rosmarin', 'thymian', 'koriander', 'zimt', 'minze', 'ras-el-hanout', 'sumach'], tipp: 'Rosmarin und Thymian sind die mediterrane Wahl, Kreuzkümmel, Zimt und Ras el Hanout die orientalische.' },
+  { id: 'schwein', name: 'Schwein und Braten', gruppe: 'Fleisch und Fisch', gewuerze: ['kuemmel', 'majoran', 'wacholder', 'fenchel', 'paprika', 'pfeffer', 'lorbeer', 'nelken'], tipp: 'Kümmel und Majoran gehören zum Krustenbraten. Fenchelsamen passen sehr gut zu Bauch und Bratwurst.' },
+  { id: 'gefluegel', name: 'Hähnchen und Geflügel', gruppe: 'Fleisch und Fisch', gewuerze: ['paprika', 'thymian', 'kurkuma', 'curry', 'rosmarin', 'ingwer', 'ras-el-hanout', 'zitronenmyrte', 'szechuan'], tipp: 'Hähnchen ist mild und folgt jeder Richtung: Paprika und Thymian fürs Brathähnchen, Curry und Ingwer für die Pfanne.' },
+  { id: 'wild', name: 'Wild und Ente', gruppe: 'Fleisch und Fisch', gewuerze: ['wacholder', 'piment', 'lorbeer', 'nelken', 'zimt', 'sternanis', 'thymian', 'pfeffer'], tipp: 'Wacholder, Piment und Lorbeer sind die Basis jeder Wildbeize. Sternanis und Zimt passen zur Ente mit Orange.' },
+  { id: 'fisch', name: 'Fisch und Meeresfrüchte', gruppe: 'Fleisch und Fisch', gewuerze: ['fenchel', 'pfeffer-weiss', 'safran', 'koriander', 'rosa-beeren', 'zitronenmyrte', 'kurkuma', 'chiliflocken', 'galgant'], tipp: 'Fisch braucht feine Gewürze. Fenchelsamen und weißer Pfeffer für hellen Fisch, Safran für Suppen und Muscheln.' },
+  { id: 'grillen', name: 'Grillen und Marinaden', gruppe: 'Fleisch und Fisch', gewuerze: ['paprika-rauch', 'pfeffer', 'kreuzkuemmel', 'thymian', 'rosmarin', 'chipotle', 'koriander', 'harissa'], tipp: 'Geräucherte Paprika und Chipotle bringen Rauch ohne Feuer. Getrocknete Kräuter erst gegen Ende zugeben, sie verbrennen schnell.' },
+
+  { id: 'apfel', name: 'Apfel und Birne', gruppe: 'Süßes und Gebäck', gewuerze: ['zimt', 'vanille', 'kardamom', 'nelken', 'sternanis', 'muskat', 'ingwer', 'zimtblueten'], tipp: 'Zimt ist gesetzt. Kardamom macht Apfelkuchen frischer, Sternanis und Nelken gehören ins Kompott.' },
+  { id: 'pflaume', name: 'Pflaume und Kirsche', gruppe: 'Süßes und Gebäck', gewuerze: ['zimt', 'sternanis', 'nelken', 'vanille', 'kardamom', 'piment', 'pfeffer'], tipp: 'Zimt und Sternanis tragen Pflaumenmus und Röster. Eine Spur schwarzer Pfeffer hebt die Frucht.' },
+  { id: 'beeren', name: 'Beeren und Erdbeeren', gruppe: 'Süßes und Gebäck', gewuerze: ['vanille', 'pfeffer', 'rosa-beeren', 'minze', 'basilikum', 'kardamom', 'lavendel', 'zitronenmyrte'], tipp: 'Erdbeeren mit frisch gemahlenem Pfeffer sind ein Klassiker. Rosa Beeren und Minze passen zu allen roten Früchten.' },
+  { id: 'zitrus', name: 'Orange und Zitrone', gruppe: 'Süßes und Gebäck', gewuerze: ['kardamom', 'zimt', 'vanille', 'sternanis', 'nelken', 'ingwer', 'safran', 'rosa-beeren'], tipp: 'Orange und Kardamom teilen ihre frische Note. Mit Zimt, Nelken und Sternanis wird daraus Winter.' },
+  { id: 'schokolade', name: 'Schokolade und Kakao', gruppe: 'Süßes und Gebäck', gewuerze: ['rohkakao', 'zimt', 'vanille', 'cayenne', 'kardamom', 'piment', 'muskat', 'chipotle'], tipp: 'Zimt und Vanille machen Kakao rund, eine Prise Cayenne macht ihn lebendig. Kardamom passt besonders zu dunkler Schokolade.' },
+  { id: 'milchreis', name: 'Milchreis, Grießbrei und Porridge', gruppe: 'Süßes und Gebäck', gewuerze: ['zimt', 'vanille', 'kardamom', 'muskat', 'safran', 'sternanis', 'pumpkin-spice'], tipp: 'Zimt obenauf, Vanille und Kardamom in die Milch. Safran färbt und gibt eine feine Honignote.' },
+  { id: 'weihnachten', name: 'Weihnachtsgebäck und Lebkuchen', gruppe: 'Süßes und Gebäck', gewuerze: ['zimt', 'nelken', 'kardamom', 'piment', 'muskat', 'sternanis', 'ingwer', 'koriander', 'pfeffer'], tipp: 'Lebkuchengewürz ist eine Mischung aus genau diesen Gewürzen. Zimt führt, Nelken und Piment sparsam dosieren.' },
+  { id: 'hefe', name: 'Hefegebäck und Brot', gruppe: 'Süßes und Gebäck', gewuerze: ['kardamom', 'zimt', 'vanille', 'safran', 'kuemmel', 'fenchel', 'koriander', 'schwarzkuemmel'], tipp: 'Kardamom gehört in süßen Hefeteig, Zimt in die Schnecke. Ins Brot kommen Kümmel, Fenchel und Koriander, aufs Fladenbrot Schwarzkümmel.' },
+
+  { id: 'kaffee', name: 'Kaffee', gruppe: 'Getränke', gewuerze: ['kardamom', 'zimt', 'vanille', 'muskat', 'rohkakao', 'nelken', 'sternanis'], tipp: 'Eine angedrückte Kardamomkapsel im Kaffeepulver ist die arabische Art. Zimt und Kakao passen auf den Milchschaum.' },
+  { id: 'tee', name: 'Tee und Chai', gruppe: 'Getränke', gewuerze: ['kardamom', 'zimt', 'ingwer', 'nelken', 'pfeffer', 'sternanis', 'fenchel', 'minze'], tipp: 'Für Chai werden Kardamom, Zimt, Ingwer, Nelken und Pfeffer mit dem Tee aufgekocht. Fenchel macht ihn süßer.' },
+  { id: 'gluehwein', name: 'Glühwein und Punsch', gruppe: 'Getränke', gewuerze: ['gluehwein', 'zimt', 'nelken', 'sternanis', 'kardamom', 'piment', 'vanille', 'zimtblueten'], tipp: 'Ganze Gewürze verwenden und nur ziehen lassen, nicht kochen. Zimtstange, Nelken und Sternanis sind die Basis.' },
+  { id: 'goldene-milch', name: 'Goldene Milch und Lattes', gruppe: 'Getränke', gewuerze: ['kurkuma', 'ingwer', 'zimt', 'pfeffer', 'kardamom', 'muskat', 'vanille'], tipp: 'Kurkuma gibt die Farbe, Ingwer und Pfeffer die Schärfe, Zimt und Kardamom die Süße.' },
+
+  { id: 'suppe', name: 'Brühe und Eintopf', gruppe: 'Suppen, Salate und Dips', gewuerze: ['lorbeer', 'piment', 'pfeffer', 'wacholder', 'nelken', 'muskat', 'majoran', 'thymian', 'galgant'], tipp: 'Lorbeer, Piment und Pfefferkörner kochen von Anfang an mit. Majoran gehört in Kartoffel- und Erbsensuppe, Muskat in helle Suppen.' },
+  { id: 'salat', name: 'Salat und Dressing', gruppe: 'Suppen, Salate und Dips', gewuerze: ['pfeffer', 'sumach', 'zahtar', 'rosa-beeren', 'basilikum', 'oregano', 'minze', 'chiliflocken'], tipp: 'Sumach ersetzt einen Teil der Säure im Dressing. Rosa Beeren und Zahtar werden erst am Tisch darübergestreut.' },
+  { id: 'joghurt', name: 'Joghurt und Dips', gruppe: 'Suppen, Salate und Dips', gewuerze: ['minze', 'kreuzkuemmel', 'sumach', 'zahtar', 'schwarzkuemmel', 'paprika', 'chiliflocken', 'harissa'], tipp: 'Getrocknete Minze und Kreuzkümmel machen aus Joghurt eine Raita. Harissa oder Paprika geben Farbe und Schärfe.' }
+];
+
+function normal(text) { return String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss'); }
+function gewuerz(id) { return GEWUERZE.find(g => g.id === id) || null; }
+function zutat(id) { return ZUTATEN.find(z => z.id === id) || null; }
+/* Alle Zutaten, zu denen ein Gewuerz genannt ist. */
+function passtZu(id) { return ZUTATEN.filter(z => z.gewuerze.includes(id)); }
+/* Andere Gewuerze mit demselben Aromastoff. */
+function auchIn(stoff, ausserId) { return GEWUERZE.filter(g => g.id !== ausserId && g.oele.includes(stoff)); }
+function suche(liste, text) { const q = normal(text).trim(); return q ? liste.filter(e => normal(e.name).includes(q)) : liste; }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { STOFFE, GEWUERZE, ZUTATEN, normal, gewuerz, zutat, passtZu, auchIn, suche };
+}
+
+if (typeof document !== 'undefined') (function () {
+  const $ = id => document.getElementById(id);
+  const neu = (tag, klasse, text) => { const e = document.createElement(tag); if (klasse) e.className = klasse; if (text !== undefined) e.textContent = text; return e; };
+  let sicht = 'zutat', gewaehlt = null;
+
+  function setzeAdresse() {
+    const ziel = gewaehlt ? '#' + sicht + '=' + gewaehlt : '#' + sicht;
+    try { history.replaceState(null, '', ziel); } catch (e) { /* ohne Adresse weiter */ }
+  }
+  function liesAdresse() {
+    const m = location.hash.match(/^#(zutat|gewuerz)(?:=([a-z0-9-]+))?$/);
+    if (!m) return;
+    sicht = m[1];
+    gewaehlt = m[2] && (sicht === 'zutat' ? zutat(m[2]) : gewuerz(m[2])) ? m[2] : null;
+  }
+
+  function zeigeAuswahl() {
+    const ziel = $('auswahl');
+    ziel.textContent = '';
+    $('suche-label').textContent = sicht === 'zutat' ? 'Zutat suchen' : 'Gewürz suchen';
+    $('suche').placeholder = sicht === 'zutat' ? 'z. B. Kürbis, Lamm, Kaffee' : 'z. B. Zimt, Kardamom, Thymian';
+    const liste = suche(sicht === 'zutat' ? ZUTATEN : GEWUERZE, $('suche').value);
+    $('auswahl-leer').hidden = liste.length > 0;
+    const gruppen = [];
+    liste.forEach(e => { const n = sicht === 'zutat' ? e.gruppe : (e.mischung ? 'Mischungen' : 'Gewürze und Kräuter'); if (!gruppen.includes(n)) gruppen.push(n); });
+    gruppen.forEach(name => {
+      const box = neu('div', 'gruppe');
+      box.appendChild(neu('span', 'klein-titel', name));
+      const chips = neu('div', 'chips');
+      liste.filter(e => (sicht === 'zutat' ? e.gruppe : (e.mischung ? 'Mischungen' : 'Gewürze und Kräuter')) === name).forEach(e => {
+        const b = neu('button', 'chip', e.name);
+        b.type = 'button'; b.setAttribute('aria-pressed', String(e.id === gewaehlt));
+        b.addEventListener('click', () => waehle(sicht, e.id, true));
+        chips.appendChild(b);
+      });
+      box.appendChild(chips);
+      ziel.appendChild(box);
+    });
+  }
+
+  function shopLink(g, text) {
+    const a = neu('a', 'shoplink', text || 'Im Shop ansehen');
+    a.href = SHOP + g.link;
+    return a;
+  }
+
+  function zeigeZutat(z) {
+    const ziel = $('ergebnis');
+    ziel.appendChild(neu('span', 'klein-titel', 'Das passt zu'));
+    ziel.appendChild(neu('h2', '', z.name));
+    ziel.appendChild(neu('p', 'tipp', z.tipp));
+    const ul = neu('ul', 'karten');
+    z.gewuerze.map(gewuerz).filter(Boolean).forEach(g => {
+      const li = neu('li');
+      const links = neu('div');
+      const name = neu('button', 'name', g.name); name.type = 'button'; name.title = 'Steckbrief von ' + g.name + ' zeigen';
+      name.addEventListener('click', () => waehle('gewuerz', g.id, true));
+      links.append(name, neu('div', 'art', g.art));
+      li.append(links, shopLink(g));
+      if (g.oele.length) { const s = neu('div', 'stoffe'); s.append(neu('b', '', 'Prägende Aromastoffe: '), g.oele.join(', ')); li.appendChild(s); }
+      ul.appendChild(li);
+    });
+    ziel.appendChild(ul);
+    ziel.appendChild(neu('p', 'hint', 'Die wichtigsten Gewürze stehen oben. Ein Klick auf den Namen zeigt den Steckbrief.'));
+  }
+
+  function zeigeGewuerz(g) {
+    const ziel = $('ergebnis');
+    ziel.appendChild(neu('span', 'klein-titel', g.mischung ? 'Gewürzmischung' : 'Gewürz'));
+    ziel.appendChild(neu('h2', '', g.name));
+    const dl = neu('dl', 'steckbrief');
+    const zeile = (titel, inhalt) => { const d = neu('div'); const dd = neu('dd'); if (typeof inhalt === 'string') dd.textContent = inhalt; else dd.appendChild(inhalt); d.append(neu('dt', '', titel), dd); dl.appendChild(d); };
+    zeile('Charakter', g.art);
+    if (g.oele.length) {
+      const box = neu('div');
+      g.oele.forEach(stoff => {
+        const s = neu('span', 'stoff');
+        s.append(neu('b', '', stoff), neu('span', 'wie', STOFFE[stoff] ? ' · ' + STOFFE[stoff] : ''));
+        const andere = auchIn(stoff, g.id);
+        if (andere.length) {
+          const a = neu('span', 'auch'); a.append('Auch in: ');
+          andere.forEach((x, i) => { const b = neu('button', 'wort', x.name); b.type = 'button'; b.addEventListener('click', () => waehle('gewuerz', x.id, true)); a.append(b, i < andere.length - 1 ? ', ' : ''); });
+          s.appendChild(a);
+        }
+        box.appendChild(s);
+      });
+      zeile('Prägende Aromastoffe', box);
+    } else if (g.mischung) {
+      zeile('Aromastoffe', 'Eine Mischung aus mehreren Gewürzen. Ihr Aroma setzt sich aus deren Aromastoffen zusammen.');
+    }
+    if (g.auch) zeile('Außerdem', g.auch);
+    const zu = passtZu(g.id);
+    if (zu.length) {
+      const box = neu('div');
+      zu.forEach((z, i) => { const b = neu('button', 'wort', z.name); b.type = 'button'; b.addEventListener('click', () => waehle('zutat', z.id, true)); box.append(b, i < zu.length - 1 ? ', ' : ''); });
+      zeile('Passt zu', box);
+    }
+    ziel.appendChild(dl);
+    const reihe = neu('div', 'reihe');
+    const knopf = neu('a', 'knopf', g.name + ' im Shop ansehen'); knopf.href = SHOP + g.link;
+    reihe.appendChild(knopf);
+    ziel.appendChild(reihe);
+  }
+
+  function zeigeErgebnis(rollen) {
+    const ziel = $('ergebnis');
+    ziel.textContent = '';
+    const e = gewaehlt && (sicht === 'zutat' ? zutat(gewaehlt) : gewuerz(gewaehlt));
+    ziel.hidden = !e;
+    if (!e) return;
+    if (sicht === 'zutat') zeigeZutat(e); else zeigeGewuerz(e);
+    if (rollen) ziel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+
+  function waehle(neueSicht, id, rollen) {
+    if (neueSicht !== sicht) { sicht = neueSicht; $('suche').value = ''; document.querySelector('input[name="sicht"][value="' + sicht + '"]').checked = true; }
+    gewaehlt = id;
+    setzeAdresse(); zeigeAuswahl(); zeigeErgebnis(rollen);
+  }
+
+  document.querySelectorAll('input[name="sicht"]').forEach(r => r.addEventListener('change', () => { sicht = r.value; gewaehlt = null; $('suche').value = ''; setzeAdresse(); zeigeAuswahl(); zeigeErgebnis(false); }));
+  $('suche').addEventListener('input', zeigeAuswahl);
+  window.addEventListener('hashchange', () => { liesAdresse(); document.querySelector('input[name="sicht"][value="' + sicht + '"]').checked = true; zeigeAuswahl(); zeigeErgebnis(false); });
+
+  liesAdresse();
+  document.querySelector('input[name="sicht"][value="' + sicht + '"]').checked = true;
+  zeigeAuswahl();
+  zeigeErgebnis(false);
+})();
+</script>
+</body>
+</html>
