@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kostenlose Rechner für kleine Betriebe: Skonto und Urlaub | Zimt&amp;Pfeffer</title>
-<meta name="description" content="Zwei kostenlose Rechner für den Betriebsalltag: Skontorechner mit Jahreszins und Urlaubsrechner für Teilzeit und Minijob. Ohne Anmeldung, von Zimt&amp;Pfeffer aus Berlin.">
+<title>Kostenlose Werkzeuge für kleine Betriebe und Shops | Zimt&amp;Pfeffer</title>
+<meta name="description" content="Kostenlose Werkzeuge für den Betriebsalltag: Skontorechner, Urlaubsrechner für Teilzeit, Bild-Kompressor ohne Upload und Bild-Tag-Generator für Shopify. Ohne Anmeldung, von Zimt&amp;Pfeffer aus Berlin.">
 <style>
   :root {
     --paper: #f3f6f1;
@@ -59,7 +59,10 @@
   .karte { display: grid; gap: 10px; align-content: start; background: var(--sheet); border: 1px solid var(--form-soft); border-top: 4px solid var(--form); padding: 22px 22px 24px; color: inherit; text-decoration: none; }
   .karte:hover { border-color: var(--form); }
   .karte:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-  .karte h2 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .karte h3 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .gruppen { display: grid; gap: 30px; }
+  .gruppe { display: grid; gap: 12px; }
+  .gruppentitel { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--form); }
   .karte p { margin: 0; color: var(--muted); font-size: 16px; }
   .karte .los { margin-top: 6px; font-weight: 700; color: var(--form); font-size: 15px; }
   .kennzahl { font-family: var(--font-num); font-size: 13px; color: var(--stamp); letter-spacing: 0.04em; text-transform: uppercase; }
@@ -70,22 +73,44 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Kleine Rechner für den Betriebsalltag</h1>
-    <p class="intro">Zwei Werkzeuge, die wir bei <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a> selbst für Rechnungen und Personal nutzen. Kostenlos, ohne Anmeldung, und alle Eingaben bleiben in deinem Browser.</p>
+    <h1>Kleine Werkzeuge für den Betriebsalltag</h1>
+    <p class="intro">Werkzeuge, die wir bei <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a> selbst nutzen: für Rechnungen, fürs Personal und für die Bilder im Shop. Kostenlos, ohne Anmeldung, und alle Eingaben und Bilder bleiben in deinem Browser.</p>
   </header>
-  <main class="karten">
+  <main class="gruppen">
+    <section class="gruppe" aria-labelledby="g-rechner">
+    <h2 class="gruppentitel" id="g-rechner">Rechner</h2>
+    <div class="karten">
     <a class="karte" href="skontorechner.html">
       <span class="kennzahl">2 % Skonto ≈ 36,7 % Jahreszins</span>
-      <h2>Skontorechner</h2>
+      <h3>Skontorechner</h3>
       <p>Skontobetrag, Zahlbetrag und enthaltene Umsatzsteuer, dazu die Zahlungstermine und der Jahreszins, dem das Skonto entspricht.</p>
       <span class="los">Zum Skontorechner →</span>
     </a>
     <a class="karte" href="urlaubsrechner.html">
       <span class="kennzahl">3 Tage pro Woche = 12 Tage Minimum</span>
-      <h2>Urlaubsrechner</h2>
+      <h3>Urlaubsrechner</h3>
       <p>Urlaubsanspruch für Teilzeit und Minijob, für wechselnde Arbeitstage und für Ein- oder Austritt im laufenden Jahr.</p>
       <span class="los">Zum Urlaubsrechner →</span>
     </a>
+    </div>
+    </section>
+    <section class="gruppe" aria-labelledby="g-bilder">
+    <h2 class="gruppentitel" id="g-bilder">Bilder für Shop und Blog</h2>
+    <div class="karten">
+    <a class="karte" href="bild-kompressor.html">
+      <span class="kennzahl">4 MB Foto → unter 100 KB</span>
+      <h3>Bild-Kompressor</h3>
+      <p>Bilder als WebP, JPEG oder PNG verkleinern, auf Wunsch genau unter eine Zielgröße. Läuft im Browser, es wird nichts hochgeladen.</p>
+      <span class="los">Zum Bild-Kompressor →</span>
+    </a>
+    <a class="karte" href="bildtag-generator.html">
+      <span class="kennzahl">Ein Bild, sechs Größen</span>
+      <h3>Bild-Tag-Generator</h3>
+      <p>Für Shopify: macht aus einer Bildadresse ein img-Tag mit srcset und sizes, für Bilder im Text von Blogartikeln und Produktbeschreibungen.</p>
+      <span class="los">Zum Bild-Tag-Generator →</span>
+    </a>
+    </div>
+    </section>
   </main>
   <footer>
     <p>Die Rechner ersetzen keine Steuer- oder Rechtsberatung.</p>

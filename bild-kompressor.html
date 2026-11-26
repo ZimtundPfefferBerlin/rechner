@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bild-Kompressor: Bilder fürs Web verkleinern, ohne Upload</title>
+<meta name="description" content="Kostenloser Bild-Kompressor im Browser: Bilder als WebP, JPEG oder PNG verkleinern, auf Wunsch genau unter 100 KB oder 500 KB. Die Bilder bleiben auf deinem Gerät, nichts wird hochgeladen.">
+<style>
+  :root {
+    --paper: #f3f6f1;
+    --sheet: #ffffff;
+    --ink: #14231c;
+    --muted: #586b61;
+    --form: #2a7a54;
+    --form-soft: #d5e6dc;
+    --stamp: #2c3fb0;
+    --good: #1f7a4a;
+    --warn: #9a5800;
+    --font-ui: "Archivo", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-num: "DM Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+      --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+    --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding: 28px 16px 40px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+  header { display: grid; gap: 6px; }
+  h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; text-wrap: balance; }
+  .terms { margin: 0; max-width: 64ch; color: var(--muted); font-size: 15px; }
+  .terms strong { color: var(--ink); font-weight: 600; }
+  .zurueck { font-size: 14px; color: var(--form); text-decoration: none; font-weight: 600; }
+  .zurueck:hover { text-decoration: underline; }
+
+  .grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .panel { background: var(--sheet); border: 1px solid var(--form-soft); border-top: 4px solid var(--form); padding: 20px 20px 22px; min-width: 0; display: grid; gap: 18px; align-content: start; }
+  .panel h2, .field > label { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--form); }
+
+  .ablage { border: 2px dashed var(--form); padding: 22px 16px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+  .ablage.drueber { background: var(--form-soft); }
+  .ablage p { margin: 0; font-size: 14px; color: var(--muted); }
+  .ablage .gross { font-size: 17px; font-weight: 700; color: var(--ink); }
+  .ablage input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  .knopf { display: inline-block; font: inherit; font-weight: 700; font-size: 14px; color: var(--sheet); background: var(--form); border: 1px solid var(--form); border-radius: 3px; padding: 9px 16px; cursor: pointer; text-decoration: none; }
+  .knopf:hover { filter: brightness(1.08); }
+  .knopf.leise { background: transparent; color: var(--form); }
+  .knopf:disabled { opacity: 0.45; cursor: default; filter: none; }
+  .knopf:focus-visible, .ablage label:focus-within, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .row { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 420px) { .row { grid-template-columns: minmax(0, 1fr); } }
+  .field { display: grid; gap: 4px; min-width: 0; }
+  select, input[type="number"] { width: 100%; min-width: 0; border: 0; border-bottom: 2px solid var(--form); border-radius: 0; background: transparent; color: var(--ink); font-family: var(--font-ui); font-size: 15px; padding: 7px 0 6px; outline: none; }
+  input[type="number"] { font-family: var(--font-num); font-size: 16px; }
+  select option { background: var(--sheet); color: var(--ink); }
+  select:focus-visible, input[type="number"]:focus-visible { border-bottom-color: var(--ink); }
+  .regler { display: flex; align-items: center; gap: 12px; }
+  .regler input { flex: 1 1 auto; min-width: 0; accent-color: var(--form); }
+  .regler output { font-family: var(--font-num); font-size: 18px; min-width: 3ch; text-align: right; }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .hint.error { color: var(--warn); font-weight: 600; }
+
+  .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  progress { width: 100%; height: 8px; accent-color: var(--form); }
+  .status { margin: 0; font-size: 14px; color: var(--muted); }
+  .status strong { color: var(--ink); }
+
+  .liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .liste > li { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--form-soft); }
+  .liste > li:first-child { border-top: 1px solid var(--form-soft); }
+  .kopf { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+  .kopf .name { font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+  .kopf .gr { font-family: var(--font-num); font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .erg { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .erg img { width: 52px; height: 52px; object-fit: cover; border: 1px solid var(--form-soft); background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 12px 12px; }
+  .erg .zahl { font-family: var(--font-num); font-size: 16px; }
+  .erg .zahl b { font-weight: 500; }
+  .erg .minus { color: var(--good); }
+  .erg .plus { color: var(--warn); }
+  .erg .info { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  .erg .info.warn { color: var(--warn); font-weight: 600; }
+  .fehler { color: var(--warn); font-weight: 600; font-size: 14px; }
+  .leer { margin: 0; color: var(--muted); font-size: 14px; }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 72ch; display: grid; gap: 8px; }
+  footer p { margin: 0; }
+  footer a { color: var(--form); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="zurueck" href="index.html">← Alle Werkzeuge</a>
+    <h1>Bild-Kompressor</h1>
+    <p class="terms">Bilder fürs Web verkleinern: als WebP, JPEG oder PNG, auf Wunsch genau unter eine Zielgröße wie 100 KB. <strong>Die Bilder bleiben auf deinem Gerät</strong>, es wird nichts hochgeladen.</p>
+  </header>
+
+  <main class="grid">
+    <section class="panel" aria-label="Bilder und Einstellungen">
+      <div class="ablage" id="ablage">
+        <p class="gross">Bilder hierher ziehen</p>
+        <label class="knopf" for="datei">Bilder wählen<input type="file" id="datei" accept="image/*" multiple></label>
+        <p>oder mit Strg+V aus der Zwischenablage einfügen</p>
+      </div>
+
+      <div class="field">
+        <label for="modus">Modus</label>
+        <select id="modus">
+          <option value="q">Qualität von Hand</option>
+          <option value="100" selected>Ziel: unter 100 KB (Web)</option>
+          <option value="500">Ziel: unter 500 KB</option>
+          <option value="beide">2 Varianten: 100 KB und 500 KB</option>
+          <option value="eigen">Ziel: eigene Größe</option>
+        </select>
+      </div>
+
+      <div class="field" id="feld-kb" hidden>
+        <label for="kb">Eigene Zielgröße in KB</label>
+        <input type="number" id="kb" value="250" min="5" max="20000" step="5" inputmode="numeric">
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="format">Zielformat</label>
+          <select id="format"></select>
+        </div>
+        <div class="field">
+          <label for="kante">Längste Seite</label>
+          <select id="kante">
+            <option value="0">wie Original</option>
+            <option value="4096">höchstens 4096 px</option>
+            <option value="2048">höchstens 2048 px</option>
+            <option value="1600">höchstens 1600 px</option>
+            <option value="1024">höchstens 1024 px</option>
+            <option value="640">höchstens 640 px</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="qualitaet" id="q-label">Qualität höchstens</label>
+        <div class="regler">
+          <input type="range" id="qualitaet" min="10" max="100" step="1" value="85">
+          <output id="q-wert" for="qualitaet">85</output>
+        </div>
+        <p class="hint" id="q-hint"></p>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="knopf" id="los" disabled>Komprimieren</button>
+        <button type="button" class="knopf leise" id="leeren" disabled>Liste leeren</button>
+      </div>
+      <p class="hint" id="format-hint" hidden></p>
+    </section>
+
+    <section class="panel" aria-label="Ergebnisse">
+      <h2>Bilder</h2>
+      <p class="status" id="status" role="status">Noch keine Bilder in der Liste.</p>
+      <progress id="fortschritt" value="0" max="1" hidden></progress>
+      <ul class="liste" id="liste"></ul>
+      <div class="actions">
+        <button type="button" class="knopf" id="zip" hidden>Alle als ZIP laden</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Bei einer Zielgröße sucht der Kompressor die beste Qualität, die noch darunter passt. Reicht das nicht, verkleinert er lieber das Bild, als es matschig zu rechnen. Aufnahmedaten wie Ort und Kamera werden beim Speichern entfernt, deine Originale bleiben unverändert.</p>
+    <p>Ein kostenloses Werkzeug von <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a>, Gewürze aus Berlin. Die Bilder werden nur in deinem Browser verarbeitet.</p>
+    <p><a href="index.html">Alle Werkzeuge</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+const KB = 1024;
+const ENDUNG = { 'image/webp': '.webp', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/avif': '.avif' };
+const FORMATNAME = { 'image/webp': 'WebP', 'image/jpeg': 'JPEG', 'image/png': 'PNG', 'image/avif': 'AVIF' };
+
+function fmtBytes(n) {
+  if (n < KB) return n + ' B';
+  if (n < KB * KB) return (n / KB).toFixed(1).replace('.', ',') + ' KB';
+  return (n / (KB * KB)).toFixed(2).replace('.', ',') + ' MB';
+}
+
+function basisName(name) {
+  const b = String(name || 'bild').replace(/\.[A-Za-z0-9]{1,5}$/, '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '-').trim();
+  return b || 'bild';
+}
+
+function eindeutig(basis, endung, benutzt) {
+  let name = basis + endung, n = 1;
+  while (benutzt.has(name.toLowerCase())) name = basis + '_' + (n++) + endung;
+  benutzt.add(name.toLowerCase());
+  return name;
+}
+
+/* Zielgroessen in Bytes je Modus. [] = Qualitaet von Hand, null = ungueltige Eingabe. */
+function ziele(modus, eigeneKb) {
+  if (modus === '100') return [100 * KB];
+  if (modus === '500') return [500 * KB];
+  if (modus === 'beide') return [100 * KB, 500 * KB];
+  if (modus === 'eigen') {
+    const kb = parseFloat(String(eigeneKb).replace(',', '.'));
+    return Number.isFinite(kb) && kb > 0 ? [Math.max(5 * KB, Math.round(kb * KB))] : null;
+  }
+  return [];
+}
+
+function neueGroesse(w, h, kante) {
+  const lang = Math.max(w, h);
+  if (!kante || lang <= kante) return [w, h];
+  return [Math.max(1, Math.round(w * kante / lang)), Math.max(1, Math.round(h * kante / lang))];
+}
+
+/* Hoechste Qualitaet in [qMin, qMax], deren Datei hoechstens ziel Bytes hat. kodiere(q) liefert ein Objekt mit .size. */
+async function sucheQualitaet(kodiere, ziel, qMax, qMin, bekanntUnten) {
+  const oben = await kodiere(qMax);
+  if (oben.size <= ziel) return { q: qMax, blob: oben };
+  let best = bekanntUnten ? { q: qMin, blob: bekanntUnten } : null;
+  let lo = bekanntUnten ? qMin + 1 : qMin, hi = qMax - 1;
+  while (lo <= hi) {
+    const mitte = (lo + hi) >> 1;
+    const b = await kodiere(mitte);
+    if (b.size <= ziel) { best = { q: mitte, blob: b }; lo = mitte + 1; } else hi = mitte - 1;
+  }
+  return best;
+}
+
+/* Bringt ein Bild unter ziel Bytes. Erst Qualitaet bis zur Untergrenze qBoden senken, dann das Bild verkleinern,
+   und nur als Notloesung (laengste Seite schon bei minKante) noch tiefer mit der Qualitaet gehen.
+   macheKodierer(w, h) liefert kodiere(q). */
+async function aufZiel(macheKodierer, w, h, ziel, o) {
+  const boden = Math.min(o.qBoden, o.qMax);
+  let cw = w, ch = h, schritte = 0;
+  for (;;) {
+    const kod = await macheKodierer(cw, ch);
+    let kleinste;
+    if (o.verlustfrei) {
+      kleinste = await kod(100);
+      if (kleinste.size <= ziel) return { blob: kleinste, q: null, w: cw, h: ch, erreicht: true };
+    } else {
+      kleinste = await kod(boden);
+      if (kleinste.size <= ziel) {
+        const r = boden >= o.qMax ? { q: boden, blob: kleinste } : await sucheQualitaet(kod, ziel, o.qMax, boden, kleinste);
+        return { blob: r.blob, q: r.q, w: cw, h: ch, erreicht: true };
+      }
+    }
+    const lang = Math.max(cw, ch);
+    if (lang <= o.minKante || ++schritte >= 12) {
+      if (!o.verlustfrei && o.qNot < boden) {
+        const r = await sucheQualitaet(kod, ziel, boden - 1, o.qNot, null);
+        if (r) return { blob: r.blob, q: r.q, w: cw, h: ch, erreicht: true };
+        return { blob: await kod(o.qNot), q: o.qNot, w: cw, h: ch, erreicht: false };
+      }
+      return { blob: kleinste, q: o.verlustfrei ? null : boden, w: cw, h: ch, erreicht: false };
+    }
+    const faktor = Math.min(0.9, Math.max(0.5, Math.sqrt(ziel / kleinste.size) * 0.95));
+    const neuLang = Math.max(Math.min(o.minKante, lang), Math.round(lang * faktor));
+    cw = Math.max(1, Math.round(cw * neuLang / lang));
+    ch = Math.max(1, Math.round(ch * neuLang / lang));
+  }
+}
+
+/* ZIP ohne Kompression (die Bilder sind schon komprimiert). dateien: [{ name, daten: Uint8Array }] */
+let crcTabelle = null;
+function crc32(bytes) {
+  if (!crcTabelle) {
+    crcTabelle = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      crcTabelle[n] = c >>> 0;
+    }
+  }
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = crcTabelle[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function baueZip(dateien, datum) {
+  const d = datum || new Date();
+  const zeit = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const tag = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const enc = new TextEncoder();
+  const teile = [], zentral = [];
+  let offset = 0;
+  for (const f of dateien) {
+    const name = enc.encode(f.name);
+    const crc = crc32(f.daten);
+    const kopf = new DataView(new ArrayBuffer(30));
+    kopf.setUint32(0, 0x04034b50, true); kopf.setUint16(4, 20, true); kopf.setUint16(6, 0x0800, true); kopf.setUint16(8, 0, true);
+    kopf.setUint16(10, zeit, true); kopf.setUint16(12, tag, true); kopf.setUint32(14, crc, true);
+    kopf.setUint32(18, f.daten.length, true); kopf.setUint32(22, f.daten.length, true); kopf.setUint16(26, name.length, true); kopf.setUint16(28, 0, true);
+    teile.push(new Uint8Array(kopf.buffer), name, f.daten);
+    const z = new DataView(new ArrayBuffer(46));
+    z.setUint32(0, 0x02014b50, true); z.setUint16(4, 20, true); z.setUint16(6, 20, true); z.setUint16(8, 0x0800, true); z.setUint16(10, 0, true);
+    z.setUint16(12, zeit, true); z.setUint16(14, tag, true); z.setUint32(16, crc, true);
+    z.setUint32(20, f.daten.length, true); z.setUint32(24, f.daten.length, true); z.setUint16(28, name.length, true);
+    z.setUint32(42, offset, true);
+    zentral.push(new Uint8Array(z.buffer), name);
+    offset += 30 + name.length + f.daten.length;
+  }
+  const zentralLaenge = zentral.reduce((s, t) => s + t.length, 0);
+  const ende = new DataView(new ArrayBuffer(22));
+  ende.setUint32(0, 0x06054b50, true); ende.setUint16(8, dateien.length, true); ende.setUint16(10, dateien.length, true);
+  ende.setUint32(12, zentralLaenge, true); ende.setUint32(16, offset, true);
+  return teile.concat(zentral, [new Uint8Array(ende.buffer)]);
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { fmtBytes, basisName, eindeutig, ziele, neueGroesse, sucheQualitaet, aufZiel, crc32, baueZip };
+}
+
+if (typeof document !== 'undefined') (function () {
+  const KEY = 'zp.kompressor.v1';
+  const $ = id => document.getElementById(id);
+  const el = { ablage: $('ablage'), datei: $('datei'), modus: $('modus'), feldKb: $('feld-kb'), kb: $('kb'), format: $('format'), kante: $('kante'),
+    q: $('qualitaet'), qWert: $('q-wert'), qLabel: $('q-label'), qHint: $('q-hint'), los: $('los'), leeren: $('leeren'), formatHint: $('format-hint'),
+    status: $('status'), fortschritt: $('fortschritt'), liste: $('liste'), zip: $('zip') };
+
+  let eintraege = [];        // { id, file, zeile, ergebnisse: [{ name, blob, url }] }
+  let laeuft = false;
+  let naechsteId = 1;
+  const kann = { 'image/webp': false, 'image/avif': false, 'image/jpeg': true, 'image/png': true };
+
+  function leinwand(w, h) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    return c;
+  }
+
+  function alsBlob(canvas, mime, q) {
+    return new Promise(fertig => {
+      try { canvas.toBlob(b => fertig(b && b.type === mime ? b : null), mime, q / 100); }
+      catch (e) { fertig(null); }
+    });
+  }
+
+  async function pruefeFormate() {
+    const c = leinwand(2, 2);
+    c.getContext('2d').fillRect(0, 0, 2, 2);
+    kann['image/webp'] = !!(await alsBlob(c, 'image/webp', 80));
+    kann['image/avif'] = !!(await alsBlob(c, 'image/avif', 80));
+    const optionen = [['auto', 'Automatisch']];
+    if (kann['image/webp']) optionen.push(['image/webp', 'WebP']);
+    if (kann['image/avif']) optionen.push(['image/avif', 'AVIF']);
+    optionen.push(['image/jpeg', 'JPEG'], ['image/png', 'PNG (verlustfrei)']);
+    el.format.textContent = '';
+    for (const [wert, name] of optionen) {
+      const o = document.createElement('option');
+      o.value = wert; o.textContent = name;
+      el.format.appendChild(o);
+    }
+    if (!kann['image/webp']) {
+      el.formatHint.hidden = false;
+      el.formatHint.textContent = 'Dieser Browser kann kein WebP speichern. Es stehen JPEG und PNG zur Wahl, in Chrome, Edge oder Firefox auch WebP.';
+    }
+  }
+
+  async function oeffne(file) {
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const b = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        return { bild: b, w: b.width, h: b.height, zu: () => { if (b.close) b.close(); } };
+      } catch (e) { /* weiter mit dem Bild-Element */ }
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    try {
+      await new Promise((ok, nein) => { img.onload = ok; img.onerror = () => nein(new Error('x')); img.src = url; });
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      throw new Error('Dein Browser kann dieses Bildformat nicht öffnen.');
+    }
+    if (!img.naturalWidth) { URL.revokeObjectURL(url); throw new Error('Das Bild hat keine feste Größe.'); }
+    return { bild: img, w: img.naturalWidth, h: img.naturalHeight, zu: () => URL.revokeObjectURL(url) };
+  }
+
+  /* Zeichnet die Quelle in Zielgroesse. Grosse Verkleinerungen laufen in Halbierungsschritten, das bleibt schaerfer. */
+  function zeichne(quelle, zw, zh, weiss) {
+    let akt = quelle.bild, cw = quelle.w, ch = quelle.h, zwischen = null;
+    while (cw / 2 >= zw && ch / 2 >= zh) {
+      const nw = Math.max(1, Math.round(cw / 2)), nh = Math.max(1, Math.round(ch / 2));
+      const c = leinwand(nw, nh);
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(akt, 0, 0, cw, ch, 0, 0, nw, nh);
+      if (zwischen) zwischen.width = 0;
+      zwischen = c; akt = c; cw = nw; ch = nh;
+    }
+    const ziel = leinwand(zw, zh);
+    const x = ziel.getContext('2d');
+    if (!x) throw new Error('Das Bild ist für diesen Browser zu groß.');
+    if (weiss) { x.fillStyle = '#fff'; x.fillRect(0, 0, zw, zh); }
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(akt, 0, 0, cw, ch, 0, 0, zw, zh);
+    if (zwischen) zwischen.width = 0;
+    return ziel;
+  }
+
+  function hatAlpha(quelle) {
+    const f = Math.min(1, 128 / Math.max(quelle.w, quelle.h));
+    const w = Math.max(1, Math.round(quelle.w * f)), h = Math.max(1, Math.round(quelle.h * f));
+    const c = leinwand(w, h);
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(quelle.bild, 0, 0, quelle.w, quelle.h, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data;
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 250) return true;
+    return false;
+  }
+
+  /* Liefert macheKodierer(w, h) -> kodiere(q) fuer ein Format; die Leinwand wird je Groesse einmal gezeichnet. */
+  function kodiererFuer(quelle, mime) {
+    let letzte = null;
+    const fabrik = async (w, h) => {
+      if (letzte) letzte.width = 0;
+      letzte = zeichne(quelle, w, h, mime === 'image/jpeg');
+      const c = letzte;
+      return async q => {
+        const b = await alsBlob(c, mime, q);
+        if (!b) throw new Error(FORMATNAME[mime] + ' kann dieser Browser nicht speichern oder das Bild ist zu groß.');
+        return b;
+      };
+    };
+    fabrik.aufraeumen = () => { if (letzte) letzte.width = 0; letzte = null; };
+    return fabrik;
+  }
+
+  async function verarbeite(eintrag, einst, benutzt) {
+    const quelle = await oeffne(eintrag.file);
+    const fabriken = [];
+    try {
+      const [zw, zh] = neueGroesse(quelle.w, quelle.h, einst.kante);
+      const alpha = eintrag.file.type === 'image/jpeg' ? false : hatAlpha(quelle);
+      const basis = basisName(eintrag.file.name);
+      const fertig = [];
+      const fabrik = mime => { const f = kodiererFuer(quelle, mime); fabriken.push(f); return f; };
+
+      if (!einst.ziele.length) {
+        let kandidaten;
+        if (einst.format !== 'auto') kandidaten = [einst.format];
+        else {
+          kandidaten = kann['image/webp'] ? ['image/webp'] : [];
+          if (!alpha) kandidaten.push('image/jpeg');
+          const grafik = /png|gif|bmp/.test(eintrag.file.type) && zw * zh <= 4e6;
+          if (alpha || grafik) kandidaten.push('image/png');
+        }
+        let best = null;
+        for (const mime of kandidaten) {
+          const kod = await fabrik(mime)(zw, zh);
+          const b = await kod(mime === 'image/png' ? 100 : einst.q);
+          if (!best || b.size < best.blob.size) best = { blob: b, mime };
+        }
+        fertig.push({ blob: best.blob, mime: best.mime, q: best.mime === 'image/png' ? null : einst.q, w: zw, h: zh, erreicht: true, anhang: '' });
+      } else {
+        let mime = einst.format;
+        if (mime === 'auto') mime = kann['image/webp'] ? 'image/webp' : (alpha ? 'image/png' : 'image/jpeg');
+        for (const ziel of einst.ziele) {
+          const r = await aufZiel(fabrik(mime), zw, zh, ziel, { qMax: einst.q, qBoden: 50, qNot: 20, minKante: 640, verlustfrei: mime === 'image/png' });
+          fertig.push(Object.assign(r, { mime, ziel, anhang: '_' + Math.round(ziel / KB) + 'kb', verkleinert: r.w !== zw || r.h !== zh }));
+        }
+      }
+      return fertig.map(r => Object.assign(r, { name: eindeutig(basis + r.anhang, ENDUNG[r.mime], benutzt), url: URL.createObjectURL(r.blob) }));
+    } finally {
+      fabriken.forEach(f => f.aufraeumen());
+      quelle.zu();
+    }
+  }
+
+  function gibFrei(eintrag) {
+    (eintrag.ergebnisse || []).forEach(r => URL.revokeObjectURL(r.url));
+    eintrag.ergebnisse = [];
+  }
+
+  function zeileKopf(eintrag) {
+    const li = document.createElement('li');
+    const kopf = document.createElement('div'); kopf.className = 'kopf';
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = eintrag.file.name || 'eingefügtes Bild';
+    const gr = document.createElement('span'); gr.className = 'gr'; gr.textContent = fmtBytes(eintrag.file.size);
+    kopf.append(name, gr);
+    li.appendChild(kopf);
+    return li;
+  }
+
+  function zeigeErgebnis(eintrag) {
+    const li = eintrag.zeile;
+    while (li.children.length > 1) li.lastChild.remove();
+    for (const r of eintrag.ergebnisse) {
+      const box = document.createElement('div'); box.className = 'erg';
+      const bild = document.createElement('img'); bild.src = r.url; bild.alt = ''; bild.loading = 'lazy';
+      const mitte = document.createElement('div');
+      const zahl = document.createElement('div'); zahl.className = 'zahl';
+      const anteil = eintrag.file.size ? (1 - r.blob.size / eintrag.file.size) * 100 : 0;
+      const gr = document.createElement('b'); gr.textContent = fmtBytes(r.blob.size);
+      const pro = document.createElement('span'); pro.className = anteil >= 0 ? 'minus' : 'plus';
+      pro.textContent = ' ' + (anteil >= 0 ? '−' : '+') + Math.abs(anteil).toFixed(0) + ' %';
+      zahl.append(gr, pro);
+      const info = document.createElement('div'); info.className = 'info';
+      const teile = [FORMATNAME[r.mime], r.w + ' × ' + r.h + ' px'];
+      if (r.q !== null) teile.push('Qualität ' + r.q);
+      if (r.verkleinert) teile.push(r.q === null ? 'verkleinert für die Zielgröße' : 'verkleinert, damit es scharf bleibt');
+      info.textContent = teile.join(' · ');
+      mitte.append(zahl, info);
+      if (!r.erreicht) {
+        const w = document.createElement('div'); w.className = 'info warn';
+        w.textContent = 'Ziel von ' + fmtBytes(r.ziel) + ' nicht erreicht. Wähle ein anderes Format oder ein größeres Ziel.';
+        mitte.appendChild(w);
+      } else if (anteil < 0) {
+        const w = document.createElement('div'); w.className = 'info warn';
+        w.textContent = 'Größer als das Original. Nimm hier lieber die Ausgangsdatei.';
+        mitte.appendChild(w);
+      }
+      const a = document.createElement('a'); a.className = 'knopf leise'; a.href = r.url; a.download = r.name; a.textContent = 'Laden';
+      a.setAttribute('aria-label', r.name + ' laden');
+      box.append(bild, mitte, a);
+      li.appendChild(box);
+    }
+  }
+
+  function zeigeFehler(eintrag, text) {
+    const li = eintrag.zeile;
+    while (li.children.length > 1) li.lastChild.remove();
+    const p = document.createElement('div'); p.className = 'fehler'; p.textContent = text;
+    li.appendChild(p);
+  }
+
+  function aktualisiere() {
+    const n = eintraege.length;
+    el.los.disabled = laeuft || !n;
+    el.leeren.disabled = laeuft || !n;
+    el.datei.disabled = laeuft;
+    const fertige = eintraege.reduce((s, e) => s + (e.ergebnisse ? e.ergebnisse.length : 0), 0);
+    el.zip.hidden = laeuft || fertige < 2;
+    const manuell = el.modus.value === 'q';
+    el.feldKb.hidden = el.modus.value !== 'eigen';
+    el.qLabel.textContent = manuell ? 'Qualität' : 'Qualität höchstens';
+    el.qWert.textContent = el.q.value;
+    el.qHint.textContent = el.format.value === 'image/png' ? 'PNG speichert verlustfrei, die Qualität spielt hier keine Rolle. Eine Zielgröße wird nur über die Bildgröße erreicht.'
+      : manuell ? '80 bis 85 ist für Fotos im Web ein guter Wert.' : 'Höher geht der Kompressor nicht, auch wenn noch Platz bis zum Ziel wäre.';
+  }
+
+  function setzeStatus(text) { el.status.textContent = text; }
+
+  function fuegeHinzu(dateien) {
+    if (laeuft) return;
+    let neu = 0, kein = 0;
+    for (const f of dateien) {
+      if (!f || !(f.type || '').startsWith('image/')) { kein++; continue; }
+      if (eintraege.some(e => e.file.name === f.name && e.file.size === f.size && e.file.lastModified === f.lastModified)) continue;
+      const eintrag = { id: naechsteId++, file: f, ergebnisse: [] };
+      eintrag.zeile = zeileKopf(eintrag);
+      el.liste.appendChild(eintrag.zeile);
+      eintraege.push(eintrag);
+      neu++;
+    }
+    if (eintraege.length) setzeStatus(eintraege.length + (eintraege.length === 1 ? ' Bild' : ' Bilder') + ' in der Liste.' + (kein ? ' ' + kein + (kein === 1 ? ' Datei war kein Bild.' : ' Dateien waren keine Bilder.') : ''));
+    else if (kein) setzeStatus('Das war kein Bild.');
+    aktualisiere();
+    return neu;
+  }
+
+  function einstellungen() {
+    return { format: el.format.value, kante: parseInt(el.kante.value, 10) || 0, q: parseInt(el.q.value, 10) || 85, ziele: ziele(el.modus.value, el.kb.value) };
+  }
+
+  function speichere() {
+    try { localStorage.setItem(KEY, JSON.stringify({ modus: el.modus.value, kb: el.kb.value, format: el.format.value, kante: el.kante.value, q: el.q.value })); }
+    catch (e) { /* ohne Speicher weiterarbeiten */ }
+  }
+
+  function lade() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (!d) return;
+      const setze = (feld, wert) => { if (wert !== undefined && Array.from(feld.options).some(o => o.value === String(wert))) feld.value = String(wert); };
+      setze(el.modus, d.modus); setze(el.format, d.format); setze(el.kante, d.kante);
+      if (d.kb) el.kb.value = d.kb;
+      const q = parseInt(d.q, 10); if (q >= 10 && q <= 100) el.q.value = q;
+    } catch (e) { /* Vorgaben behalten */ }
+  }
+
+  async function starte() {
+    if (laeuft || !eintraege.length) return;
+    const einst = einstellungen();
+    if (einst.ziele === null) { setzeStatus('Bitte eine Zielgröße in KB eintragen, zum Beispiel 250.'); el.kb.focus(); return; }
+    laeuft = true;
+    aktualisiere();
+    el.fortschritt.hidden = false; el.fortschritt.max = eintraege.length; el.fortschritt.value = 0;
+    const benutzt = new Set();
+    let vorher = 0, nachher = 0, fehler = 0;
+    for (let i = 0; i < eintraege.length; i++) {
+      const eintrag = eintraege[i];
+      setzeStatus('Bild ' + (i + 1) + ' von ' + eintraege.length + ' wird komprimiert …');
+      await new Promise(r => setTimeout(r, 0));
+      gibFrei(eintrag);
+      try {
+        eintrag.ergebnisse = await verarbeite(eintrag, einst, benutzt);
+        zeigeErgebnis(eintrag);
+        vorher += eintrag.file.size * eintrag.ergebnisse.length;
+        nachher += eintrag.ergebnisse.reduce((s, r) => s + r.blob.size, 0);
+      } catch (e) {
+        fehler++;
+        zeigeFehler(eintrag, e && e.message ? e.message : 'Dieses Bild ließ sich nicht verarbeiten.');
+      }
+      el.fortschritt.value = i + 1;
+    }
+    laeuft = false;
+    el.fortschritt.hidden = true;
+    const gespart = vorher ? (1 - nachher / vorher) * 100 : 0;
+    setzeStatus(vorher
+      ? 'Fertig: ' + fmtBytes(vorher) + ' → ' + fmtBytes(nachher) + ' (' + (gespart >= 0 ? '−' : '+') + Math.abs(gespart).toFixed(0) + ' %).' + (fehler ? ' ' + fehler + (fehler === 1 ? ' Bild ließ' : ' Bilder ließen') + ' sich nicht verarbeiten.' : '')
+      : 'Keines der Bilder ließ sich verarbeiten.');
+    aktualisiere();
+  }
+
+  function leere() {
+    if (laeuft) return;
+    eintraege.forEach(gibFrei);
+    eintraege = [];
+    el.liste.textContent = '';
+    setzeStatus('Noch keine Bilder in der Liste.');
+    aktualisiere();
+  }
+
+  async function ladeZip() {
+    const alle = eintraege.flatMap(e => e.ergebnisse || []);
+    if (alle.length < 2) return;
+    el.zip.disabled = true;
+    try {
+      const dateien = [];
+      for (const r of alle) dateien.push({ name: r.name, daten: new Uint8Array(await r.blob.arrayBuffer()) });
+      const url = URL.createObjectURL(new Blob(baueZip(dateien), { type: 'application/zip' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = 'bilder-komprimiert.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      setzeStatus('Das ZIP ließ sich nicht erstellen. Lade die Bilder einzeln.');
+    }
+    el.zip.disabled = false;
+  }
+
+  el.datei.addEventListener('change', () => { fuegeHinzu(Array.from(el.datei.files || [])); el.datei.value = ''; });
+  ['dragenter', 'dragover'].forEach(t => el.ablage.addEventListener(t, ev => { ev.preventDefault(); el.ablage.classList.add('drueber'); }));
+  ['dragleave', 'drop'].forEach(t => el.ablage.addEventListener(t, ev => { ev.preventDefault(); el.ablage.classList.remove('drueber'); }));
+  el.ablage.addEventListener('drop', ev => { if (ev.dataTransfer) fuegeHinzu(Array.from(ev.dataTransfer.files || [])); });
+  window.addEventListener('dragover', ev => ev.preventDefault());
+  window.addEventListener('drop', ev => ev.preventDefault());
+  document.addEventListener('paste', ev => {
+    const dateien = Array.from((ev.clipboardData && ev.clipboardData.files) || []).filter(f => (f.type || '').startsWith('image/'));
+    if (!dateien.length) return;
+    ev.preventDefault();
+    const d = new Date(), z = n => String(n).padStart(2, '0');
+    const stempel = d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '_' + z(d.getHours()) + z(d.getMinutes()) + z(d.getSeconds());
+    fuegeHinzu(dateien.map((f, i) => new File([f], 'eingefuegt_' + stempel + (i ? '_' + i : '') + '.' + ((f.type.split('/')[1] || 'png').replace('jpeg', 'jpg')), { type: f.type, lastModified: Date.now() + i })));
+  });
+  [el.modus, el.format, el.kante, el.kb].forEach(f => f.addEventListener('change', () => { aktualisiere(); speichere(); }));
+  el.q.addEventListener('input', () => { el.qWert.textContent = el.q.value; });
+  el.q.addEventListener('change', speichere);
+  el.los.addEventListener('click', starte);
+  el.leeren.addEventListener('click', leere);
+  el.zip.addEventListener('click', ladeZip);
+
+  pruefeFormate().then(() => { lade(); aktualisiere(); });
+})();
+</script>
+</body>
+</html>

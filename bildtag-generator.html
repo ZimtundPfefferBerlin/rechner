@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bild-Tag-Generator für Shopify: img mit srcset und sizes</title>
+<meta name="description" content="Kostenloser Generator für Shopify: Aus einer Bildadresse wird ein responsives img-Tag mit srcset, sizes, Breite und Höhe für Blogartikel und Produktbeschreibungen. Ohne Anmeldung.">
+<style>
+  :root {
+    --paper: #f3f6f1;
+    --sheet: #ffffff;
+    --ink: #14231c;
+    --muted: #586b61;
+    --form: #2a7a54;
+    --form-soft: #d5e6dc;
+    --stamp: #2c3fb0;
+    --good: #1f7a4a;
+    --warn: #9a5800;
+    --font-ui: "Archivo", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-num: "DM Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+      --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1613; --sheet: #18221d; --ink: #e7efe9; --muted: #97aaa0;
+    --form: #6ecb99; --form-soft: #2a3b33; --stamp: #98a7ff; --good: #7ad7a4; --warn: #f0b35a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding: 28px 16px 40px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+  header { display: grid; gap: 6px; }
+  h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; text-wrap: balance; }
+  .terms { margin: 0; max-width: 64ch; color: var(--muted); font-size: 15px; }
+  .terms strong { color: var(--ink); font-weight: 600; }
+  code { font-family: var(--font-num); font-size: 0.92em; }
+  .zurueck { font-size: 14px; color: var(--form); text-decoration: none; font-weight: 600; }
+  .zurueck:hover { text-decoration: underline; }
+
+  .grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .panel { background: var(--sheet); border: 1px solid var(--form-soft); border-top: 4px solid var(--form); padding: 20px 20px 22px; min-width: 0; }
+
+  form { display: grid; gap: 18px; }
+  .row { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 420px) { .row { grid-template-columns: minmax(0, 1fr); } }
+  .field { display: grid; gap: 4px; min-width: 0; }
+  .field > label, .legend, .panel h2 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--form); }
+  textarea, input[type="text"], input[type="number"], select {
+    width: 100%; min-width: 0; border: 0; border-bottom: 2px solid var(--form); border-radius: 0;
+    background: transparent; color: var(--ink); font-family: var(--font-num); font-size: 16px; padding: 6px 0 5px; outline: none;
+  }
+  textarea { resize: vertical; min-height: 78px; font-size: 14px; line-height: 1.4; word-break: break-all; border: 1px solid var(--form-soft); border-bottom: 2px solid var(--form); padding: 8px; }
+  select { font-family: var(--font-ui); font-size: 15px; padding: 7px 0 6px; }
+  select option { background: var(--sheet); color: var(--ink); }
+  textarea:focus-visible, input:focus-visible, select:focus-visible { border-bottom-color: var(--ink); }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .hint.error { color: var(--warn); font-weight: 600; }
+  .hint.good { color: var(--good); }
+
+  fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+  .seg { display: flex; flex-wrap: wrap; border: 1px solid var(--form); width: max-content; max-width: 100%; }
+  .seg label { position: relative; font-size: 14px; font-weight: 600; padding: 7px 14px; cursor: pointer; color: var(--form); border-right: 1px solid var(--form); }
+  .seg label:last-child { border-right: 0; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg label:has(input:checked) { background: var(--form); color: var(--sheet); }
+  .seg label:focus-within, .copy:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; cursor: pointer; }
+  .check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--form); flex: 0 0 auto; }
+  details { border-top: 1px solid var(--form-soft); padding-top: 12px; }
+  summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--form); }
+  details .row { margin-top: 12px; }
+  details .hint { margin-top: 10px; }
+
+  .ergebnis { display: grid; gap: 16px; }
+  pre { margin: 0; background: var(--paper); border: 1px solid var(--form-soft); padding: 12px; font-family: var(--font-num); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 340px; overflow: auto; }
+  pre.leer { color: var(--muted); font-family: var(--font-ui); font-size: 14px; }
+  .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .copy { font: inherit; font-weight: 700; font-size: 14px; color: var(--sheet); background: var(--form); border: 1px solid var(--form); border-radius: 3px; padding: 8px 14px; cursor: pointer; }
+  .copy:hover { filter: brightness(1.08); }
+  .copy:disabled { opacity: 0.45; cursor: default; filter: none; }
+  .copied { font-size: 13px; color: var(--muted); }
+  .wohin { margin: 0; font-size: 14px; border-left: 3px solid var(--form); padding-left: 10px; }
+  .fakten { display: grid; gap: 0; margin: 0; }
+  .fakten div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--form-soft); font-size: 14px; }
+  .fakten dt { margin: 0; color: var(--muted); }
+  .fakten dd { margin: 0; font-family: var(--font-num); text-align: right; }
+  .vorschau { display: grid; gap: 8px; }
+  .vorschau .rahmen { border: 1px dashed var(--form-soft); padding: 10px; overflow: hidden; background: #fff; }
+  .vorschau img { max-width: 100%; height: auto; }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 72ch; display: grid; gap: 8px; }
+  footer p { margin: 0; }
+  footer a { color: var(--form); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="zurueck" href="index.html">← Alle Werkzeuge</a>
+    <h1>Bild-Tag-Generator für Shopify</h1>
+    <p class="terms">Aus einer Shopify-Bildadresse wird ein fertiges <code>&lt;img&gt;</code>-Tag mit <strong>srcset</strong> und <strong>sizes</strong>. Handys laden damit eine kleine Datei, große Bildschirme eine scharfe. Für Bilder im Text von Blogartikeln und Produktbeschreibungen.</p>
+  </header>
+
+  <main class="grid">
+    <form class="panel" id="eingaben" autocomplete="off" novalidate>
+      <fieldset>
+        <span class="legend" id="modus-legende">Wofür ist das Bild?</span>
+        <div class="seg" role="radiogroup" aria-labelledby="modus-legende">
+          <label><input type="radio" name="modus" value="blog" checked>Blogartikel</label>
+          <label><input type="radio" name="modus" value="produkt">Produktbeschreibung</label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="quelle">Bildadresse oder vorhandenes img-Tag</label>
+        <textarea id="quelle" spellcheck="false" placeholder="https://cdn.shopify.com/s/files/1/0000/0000/0000/files/beispiel.jpg?v=1700000000" aria-describedby="quelle-hint"></textarea>
+        <p class="hint" id="quelle-hint">In Shopify unter „Inhalte → Dateien“ das Bild anklicken und „Link kopieren“. Zum Reparieren alter Bilder kannst du auch das ganze alte img-Tag einfügen.</p>
+      </div>
+
+      <div class="field">
+        <label for="alt">Alt-Text</label>
+        <input type="text" id="alt" placeholder="Was ist auf dem Bild zu sehen?" aria-describedby="alt-hint">
+        <p class="hint" id="alt-hint">Kurze Beschreibung für Screenreader und die Bildersuche.</p>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="breite">Anzeigebreite</label>
+          <input type="number" id="breite" value="600" min="100" max="2000" step="10" inputmode="numeric" aria-describedby="breite-hint">
+          <p class="hint" id="breite-hint">In Pixeln, so breit steht das Bild am Computer.</p>
+        </div>
+        <div class="field">
+          <label for="stil">Stil</label>
+          <select id="stil"></select>
+        </div>
+      </div>
+
+      <label class="check"><input type="checkbox" id="oben"><span>Das Bild steht ganz oben auf der Seite. Dann wird es sofort geladen statt erst beim Scrollen.</span></label>
+
+      <details>
+        <summary>Feineinstellung für dein Theme</summary>
+        <div class="row">
+          <div class="field">
+            <label for="umbruch">Computer ab</label>
+            <input type="number" id="umbruch" value="769" min="320" max="2000" step="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="rand">Rand am Handy</label>
+            <input type="number" id="rand" value="34" min="0" max="200" step="1" inputmode="numeric">
+          </div>
+        </div>
+        <p class="hint">„Computer ab“ ist die Bildschirmbreite in Pixeln, ab der die Anzeigebreite gilt. „Rand am Handy“ ist der Platz links und rechts neben dem Text zusammen. Die Vorgaben passen zu den meisten Shopify-Themes.</p>
+      </details>
+    </form>
+
+    <section class="panel ergebnis" aria-live="polite">
+      <h2>Fertiges Tag</h2>
+      <pre id="aus" class="leer">Füge links eine Bildadresse ein, dann steht hier das Tag.</pre>
+      <p class="hint" id="meldung" hidden></p>
+      <div class="actions">
+        <button type="button" class="copy" id="kopieren" disabled>Tag kopieren</button>
+        <span class="copied" id="kopiert" role="status"></span>
+      </div>
+      <p class="wohin" id="wohin"></p>
+      <dl class="fakten" id="fakten" hidden>
+        <div><dt>Original</dt><dd id="f-original">–</dd></div>
+        <div><dt>Bildstufen</dt><dd id="f-stufen">–</dd></div>
+      </dl>
+      <div class="vorschau" id="vorschau" hidden>
+        <h2>Vorschau</h2>
+        <div class="rahmen" id="rahmen"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Das Tag nutzt die Bildverkleinerung von Shopify über <code>?width=</code>. Breite und Höhe im Tag reservieren den Platz, damit der Text beim Laden nicht springt. Die Vorschau lädt das Bild direkt von Shopify, sonst wird nichts übertragen.</p>
+    <p>Ein kostenloses Werkzeug von <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a>, Gewürze aus Berlin. Nicht von Shopify, wir nutzen es selbst für unseren Shop.</p>
+    <p><a href="index.html">Alle Werkzeuge</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+const LEITER = [360, 480, 600, 720, 900, 1200, 1600, 2000];
+
+const STILE = {
+  blog: [
+    ['Zentriert, abgerundet', 'display: block; max-width: 100%; height: auto; margin: 32px auto; border-radius: 16px;'],
+    ['80 % Breite, abgerundet', 'display: block; width: 80%; max-width: {W}px; height: auto; margin: 22px auto; border-radius: 12px;'],
+    ['Schlicht zentriert', 'display: block; max-width: 100%; height: auto; margin-left: auto; margin-right: auto;'],
+    ['Kein Stil', '']
+  ],
+  produkt: [
+    ['Linksbündig, abgerundet', 'width: 100%; max-width: {W}px; height: auto; border-radius: 8px; margin: 12px 0;'],
+    ['Volle Spaltenbreite', 'width: 100%; height: auto; margin: 12px 0;'],
+    ['Zentriert, abgerundet', 'display: block; width: 100%; max-width: {W}px; height: auto; margin: 22px auto; border-radius: 12px;'],
+    ['Kein Stil', '']
+  ]
+};
+
+const WOHIN = {
+  blog: 'Einfügen: im Blogbeitrag im Editor auf „<> HTML anzeigen“ klicken und das Tag an die gewünschte Stelle setzen.',
+  produkt: 'Einfügen: im Produkt unter „Beschreibung“ auf „<> HTML anzeigen“ klicken und das Tag an die gewünschte Stelle setzen. Ein altes Tag an derselben Stelle ersetzen.'
+};
+
+function entschluessle(s) {
+  return String(s).replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+function maskiere(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* Nimmt eine Adresse oder ein ganzes img-Tag und gibt { url, alt, ausTag } zurueck. */
+function leseEingabe(text) {
+  const t = String(text || '').trim();
+  const tag = t.match(/<img\b[^>]*>/i);
+  if (!tag) return { url: t, alt: null, ausTag: false };
+  const attr = name => {
+    const m = tag[0].match(new RegExp('\\s' + name + '\\s*=\\s*("([^"]*)"|\'([^\']*)\'|([^\\s>]+))', 'i'));
+    return m ? entschluessle(m[2] !== undefined ? m[2] : m[3] !== undefined ? m[3] : m[4]) : null;
+  };
+  return { url: (attr('src') || '').trim(), alt: attr('alt'), ausTag: true };
+}
+
+/* Prueft die Adresse und zerlegt sie in Basis und Versionsnummer. */
+function zerlegeAdresse(roh) {
+  let s = String(roh || '').trim();
+  if (!s) return { ok: false, leer: true };
+  if (s.startsWith('//')) s = 'https:' + s;
+  else if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = 'https://' + s;
+  let u;
+  try { u = new URL(s); } catch (e) { return { ok: false, fehler: 'Das ist keine vollständige Adresse. Sie sollte mit https:// beginnen.' }; }
+  if (!/^https?:$/.test(u.protocol)) return { ok: false, fehler: 'Die Adresse sollte mit https:// beginnen.' };
+  const shopify = u.hostname === 'cdn.shopify.com' || u.pathname.includes('/cdn/shop/');
+  if (!shopify) return { ok: false, fehler: 'Das sieht nicht nach einer Shopify-Bildadresse aus. Sie enthält normalerweise cdn.shopify.com oder /cdn/shop/.' };
+  if (/\.svg$/i.test(u.pathname)) return { ok: false, fehler: 'SVG-Grafiken sind in jeder Größe scharf und brauchen kein srcset.' };
+  let pfad = u.pathname;
+  let hinweis = '';
+  const alt = pfad.match(/_(\d{2,4}x\d{0,4}|x\d{2,4})(@[23]x)?(\.(?:jpe?g|png|webp|gif|avif))$/i);
+  if (alt) {
+    pfad = pfad.slice(0, alt.index) + alt[3];
+    hinweis = 'Die alte Größenangabe „_' + alt[1] + '“ im Dateinamen wurde entfernt, damit Shopify das Original verkleinert.';
+  }
+  const v = u.searchParams.get('v');
+  return { ok: true, basis: 'https://' + u.host + pfad, v: v && /^[\w.-]+$/.test(v) ? v : '', hinweis };
+}
+
+function adresse(teile, breite, fuerHtml) {
+  return teile.basis + '?width=' + breite + (teile.v ? (fuerHtml ? '&amp;' : '&') + 'v=' + teile.v : '');
+}
+
+/* Bildstufen fuer srcset: feste Leiter, dazu Anzeigebreite und doppelte Anzeigebreite, gedeckelt auf das Original. */
+function stufen(anzeige, originalBreite) {
+  const max = Math.max(1200, anzeige * 2);
+  const menge = new Set(LEITER.filter(w => w <= max));
+  menge.add(anzeige);
+  menge.add(Math.min(anzeige * 2, 4000));
+  let liste = Array.from(menge);
+  if (originalBreite) {
+    liste = liste.filter(w => w <= originalBreite);
+    if (!liste.length || (liste[liste.length - 1] < originalBreite && originalBreite < Math.max(...menge))) liste.push(originalBreite);
+  }
+  return Array.from(new Set(liste)).sort((a, b) => a - b);
+}
+
+function baueSizes(anzeige, umbruch, rand) {
+  const handy = rand > 0 ? 'calc(100vw - ' + rand + 'px)' : '100vw';
+  return '(min-width: ' + umbruch + 'px) ' + anzeige + 'px, ' + handy;
+}
+
+/* e: { teile, alt, anzeige, stil, oben, umbruch, rand, originalBreite, originalHoehe } */
+function baueTag(e) {
+  const anzeige = e.originalBreite ? Math.min(e.anzeige, e.originalBreite) : e.anzeige;
+  const liste = stufen(e.anzeige, e.originalBreite);
+  const stil = (e.stil || '').replace(/\{W\}/g, String(e.anzeige));
+  const zeilen = [];
+  zeilen.push('<img src="' + adresse(e.teile, anzeige, true) + '"');
+  zeilen.push('     srcset="' + liste.map(w => adresse(e.teile, w, true) + ' ' + w + 'w').join(',\n             ') + '"');
+  zeilen.push('     sizes="' + baueSizes(e.anzeige, e.umbruch, e.rand) + '"');
+  if (stil && e.originalBreite && e.originalHoehe) {
+    zeilen.push('     width="' + anzeige + '" height="' + Math.round(anzeige * e.originalHoehe / e.originalBreite) + '"');
+  }
+  zeilen.push('     alt="' + maskiere(e.alt || '') + '"');
+  zeilen.push(e.oben ? '     loading="eager" fetchpriority="high" decoding="async"' : '     loading="lazy" decoding="async"');
+  if (stil) zeilen.push('     style="' + stil + '"');
+  return { tag: zeilen.join('\n') + '>', stufen: liste, anzeige, stil };
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { leseEingabe, zerlegeAdresse, adresse, stufen, baueSizes, baueTag, maskiere, STILE };
+}
+
+if (typeof document !== 'undefined') (function () {
+  const KEY = 'zp.bildtag.v1';
+  const $ = id => document.getElementById(id);
+  const el = { quelle: $('quelle'), alt: $('alt'), breite: $('breite'), stil: $('stil'), oben: $('oben'), umbruch: $('umbruch'), rand: $('rand'),
+    aus: $('aus'), meldung: $('meldung'), kopieren: $('kopieren'), kopiert: $('kopiert'), wohin: $('wohin'), fakten: $('fakten'),
+    fOriginal: $('f-original'), fStufen: $('f-stufen'), vorschau: $('vorschau'), rahmen: $('rahmen') };
+
+  let masse = { fuer: '', breite: 0, hoehe: 0, status: '' };   // gemessenes Original zur aktuellen Adresse
+  let altAutomatisch = '';
+  let tagText = '';
+
+  const modus = () => document.querySelector('input[name="modus"]:checked').value;
+  const zahl = (feld, vorgabe, min, max) => {
+    const n = parseInt(feld.value, 10);
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : vorgabe;
+  };
+
+  function fuelleStile(merke) {
+    const liste = STILE[modus()];
+    const index = merke !== undefined ? merke : Math.max(0, el.stil.selectedIndex);
+    el.stil.textContent = '';
+    liste.forEach(([name], i) => {
+      const o = document.createElement('option');
+      o.value = String(i); o.textContent = name;
+      el.stil.appendChild(o);
+    });
+    el.stil.selectedIndex = Math.min(index, liste.length - 1);
+    el.wohin.textContent = WOHIN[modus()];
+  }
+
+  function melde(text, art) {
+    el.meldung.hidden = !text;
+    el.meldung.textContent = text || '';
+    el.meldung.className = 'hint' + (art ? ' ' + art : '');
+  }
+
+  function speichere() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ modus: modus(), breite: el.breite.value, stil: el.stil.selectedIndex, umbruch: el.umbruch.value, rand: el.rand.value }));
+    } catch (e) { /* ohne Speicher weiterarbeiten */ }
+  }
+
+  function lade() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (!d) return undefined;
+      const r = document.querySelector('input[name="modus"][value="' + (d.modus === 'produkt' ? 'produkt' : 'blog') + '"]');
+      if (r) r.checked = true;
+      if (d.breite) el.breite.value = d.breite;
+      if (d.umbruch) el.umbruch.value = d.umbruch;
+      if (d.rand !== undefined && d.rand !== '') el.rand.value = d.rand;
+      return Number.isInteger(d.stil) ? d.stil : undefined;
+    } catch (e) { return undefined; }
+  }
+
+  function messe(teile, groesste) {
+    const schluessel = teile.basis + '|' + groesste;
+    if (masse.fuer === schluessel) return;
+    masse = { fuer: schluessel, breite: 0, hoehe: 0, status: 'laedt' };
+    const probe = new Image();
+    probe.onload = () => {
+      if (masse.fuer !== schluessel) return;
+      masse.breite = probe.naturalWidth; masse.hoehe = probe.naturalHeight; masse.status = 'ok';
+      masse.gedeckelt = probe.naturalWidth < groesste;
+      zeige();
+    };
+    probe.onerror = () => {
+      if (masse.fuer !== schluessel) return;
+      masse.status = 'fehler';
+      zeige();
+    };
+    probe.src = adresse(teile, groesste, false);
+  }
+
+  function zeige() {
+    el.kopiert.textContent = '';
+    const eingabe = leseEingabe(el.quelle.value);
+    if (eingabe.ausTag && eingabe.alt && (!el.alt.value || el.alt.value === altAutomatisch)) {
+      el.alt.value = eingabe.alt; altAutomatisch = eingabe.alt;
+    }
+    const teile = zerlegeAdresse(eingabe.url);
+    if (!teile.ok) {
+      tagText = '';
+      el.aus.textContent = 'Füge links eine Bildadresse ein, dann steht hier das Tag.';
+      el.aus.className = 'leer';
+      el.kopieren.disabled = true;
+      el.fakten.hidden = true; el.vorschau.hidden = true;
+      melde(teile.leer ? (eingabe.ausTag ? 'Im eingefügten Tag steht keine Bildadresse (src).' : '') : teile.fehler, 'error');
+      return;
+    }
+    const anzeige = zahl(el.breite, 600, 100, 2000);
+    const umbruch = zahl(el.umbruch, 769, 320, 2000);
+    const rand = zahl(el.rand, 34, 0, 200);
+    const groesste = Math.max(...stufen(anzeige, 0));
+    messe(teile, groesste);
+    const gemessen = masse.status === 'ok';
+    const original = gemessen && masse.gedeckelt ? masse.breite : 0;
+    const stil = STILE[modus()][Math.max(0, el.stil.selectedIndex)][1];
+    const ergebnis = baueTag({
+      teile, alt: el.alt.value.trim(), anzeige, stil, oben: el.oben.checked, umbruch, rand,
+      originalBreite: gemessen ? (original || groesste) : 0,
+      originalHoehe: gemessen ? Math.round((original || groesste) * masse.hoehe / masse.breite) : 0
+    });
+    tagText = ergebnis.tag;
+    el.aus.textContent = tagText;
+    el.aus.className = '';
+    el.kopieren.disabled = false;
+
+    const meldungen = [];
+    let art = '';
+    if (teile.hinweis) meldungen.push(teile.hinweis);
+    if (masse.status === 'fehler') { meldungen.push('Das Bild ließ sich nicht laden. Prüfe die Adresse, sonst zeigt auch dein Shop an der Stelle nichts.'); art = 'error'; }
+    if (gemessen && original && original < anzeige) { meldungen.push('Das Original ist nur ' + original + ' px breit und damit schmaler als die Anzeigebreite. Größer dargestellt wird es unscharf.'); art = 'error'; }
+    if (!el.alt.value.trim()) meldungen.push('Der Alt-Text fehlt noch.');
+    melde(meldungen.join(' '), art);
+
+    el.fakten.hidden = false;
+    el.fOriginal.textContent = masse.status === 'laedt' ? 'wird gemessen …' : !gemessen ? 'unbekannt'
+      : (original ? original + ' × ' + masse.hoehe + ' px' : 'mindestens ' + groesste + ' px breit');
+    el.fStufen.textContent = ergebnis.stufen.join(', ') + ' px';
+
+    el.vorschau.hidden = masse.status === 'fehler';
+    el.rahmen.textContent = '';
+    if (masse.status !== 'fehler') {
+      const bild = document.createElement('img');
+      bild.alt = el.alt.value.trim();
+      bild.sizes = baueSizes(anzeige, umbruch, rand);
+      bild.srcset = ergebnis.stufen.map(w => adresse(teile, w, false) + ' ' + w + 'w').join(', ');
+      bild.src = adresse(teile, ergebnis.anzeige, false);
+      if (ergebnis.stil) bild.style.cssText = ergebnis.stil;
+      el.rahmen.appendChild(bild);
+    }
+  }
+
+  let warte = 0;
+  function spaeter() { clearTimeout(warte); warte = setTimeout(() => { zeige(); speichere(); }, 250); }
+
+  document.querySelectorAll('input[name="modus"]').forEach(r => r.addEventListener('change', () => { fuelleStile(0); zeige(); speichere(); }));
+  [el.quelle, el.alt, el.breite, el.umbruch, el.rand].forEach(f => f.addEventListener('input', spaeter));
+  [el.stil, el.oben].forEach(f => f.addEventListener('change', () => { zeige(); speichere(); }));
+  $('eingaben').addEventListener('submit', ev => ev.preventDefault());
+
+  el.kopieren.addEventListener('click', async () => {
+    if (!tagText) return;
+    let ok = true;
+    try { await navigator.clipboard.writeText(tagText); }
+    catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = tagText; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      ta.remove();
+    }
+    el.kopiert.textContent = ok ? 'Kopiert. Jetzt in der HTML-Ansicht einfügen.' : 'Kopieren hat nicht geklappt. Markiere das Tag und kopiere es von Hand.';
+  });
+
+  fuelleStile(lade());
+  zeige();
+})();
+</script>
+</body>
+</html>
