@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skontorechner: Skontobetrag, Zahlbetrag und Jahreszins berechnen</title>
+<meta name="description" content="Kostenloser Skontorechner: Skontobetrag, Zahlbetrag, enthaltene Umsatzsteuer, Zahlungstermine und der Jahreszins, dem das Skonto entspricht. Ohne Anmeldung.">
+<style>
+  :root {
+    /* Layout: links das Formular wie ein Vordruck, rechts der Beleg mit der Rechnung; ein Stempel traegt den Jahreszins. */
+    --paper: #f3f6f1;
+    --sheet: #ffffff;
+    --ink: #14231c;
+    --muted: #586b61;
+    --form: #2a7a54;
+    --form-soft: #d5e6dc;
+    --stamp: #2c3fb0;
+    --good: #1f7a4a;
+    --warn: #9a5800;
+    --font-ui: "Archivo", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-num: "DM Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1613;
+      --sheet: #18221d;
+      --ink: #e7efe9;
+      --muted: #97aaa0;
+      --form: #6ecb99;
+      --form-soft: #2a3b33;
+      --stamp: #98a7ff;
+      --good: #7ad7a4;
+      --warn: #f0b35a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1613;
+    --sheet: #18221d;
+    --ink: #e7efe9;
+    --muted: #97aaa0;
+    --form: #6ecb99;
+    --form-soft: #2a3b33;
+    --stamp: #98a7ff;
+    --good: #7ad7a4;
+    --warn: #f0b35a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 16px;
+    line-height: 1.45;
+    padding: 28px 16px 40px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+
+  header { display: grid; gap: 6px; }
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 800;
+    font-stretch: 75%;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+  .terms {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .terms strong { color: var(--ink); font-weight: 600; }
+
+  .grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel {
+    background: var(--sheet);
+    border: 1px solid var(--form-soft);
+    border-top: 4px solid var(--form);
+    padding: 20px 20px 22px;
+  }
+
+  form { display: grid; gap: 18px; }
+  .row { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 420px) { .row { grid-template-columns: minmax(0, 1fr); } }
+  .field { display: grid; gap: 4px; min-width: 0; }
+  .field > label, .legend {
+    font-size: 12px;
+    font-weight: 700;
+    font-stretch: 85%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--form);
+  }
+  .inputwrap { display: flex; align-items: baseline; gap: 6px; border-bottom: 2px solid var(--form); }
+  .inputwrap:focus-within { border-bottom-color: var(--ink); }
+  .inputwrap .unit { font-family: var(--font-num); color: var(--muted); font-size: 15px; padding-bottom: 5px; }
+  input[type="text"], input[type="date"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-num);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    padding: 6px 0 5px;
+    outline: none;
+  }
+  input[type="date"] { font-size: 17px; }
+  input:focus-visible { outline: none; }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .hint.error { color: var(--warn); font-weight: 600; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip {
+    font: inherit;
+    font-family: var(--font-num);
+    font-size: 13px;
+    color: var(--form);
+    background: transparent;
+    border: 1px solid var(--form);
+    border-radius: 999px;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  .chip:hover, .chip[aria-pressed="true"] { background: var(--form); color: var(--sheet); }
+  .chip:focus-visible, .seg label:focus-within, .copy:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+  .seg { display: flex; border: 1px solid var(--form); width: max-content; max-width: 100%; }
+  .seg label {
+    position: relative;
+    font-family: var(--font-num);
+    font-size: 14px;
+    padding: 6px 14px;
+    cursor: pointer;
+    color: var(--form);
+    border-right: 1px solid var(--form);
+  }
+  .seg label:last-child { border-right: 0; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg label:has(input:checked) { background: var(--form); color: var(--sheet); }
+
+  /* Beleg */
+  .beleg { position: relative; display: grid; gap: 16px; }
+  .beleg h2 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    font-stretch: 85%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--form);
+  }
+  .lines { display: grid; gap: 0; margin: 0; }
+  .line {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--form-soft);
+  }
+  .line dt { margin: 0; }
+  .line dd { margin: 0; font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .line.minus dd { color: var(--good); }
+  .line.sub { padding: 5px 0 5px 14px; font-size: 14px; color: var(--muted); border-bottom-style: dashed; }
+  .total {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 12px 0 4px;
+    border-top: 2px solid var(--ink);
+    margin-top: -1px;
+  }
+  .total .label { font-weight: 700; font-size: 17px; }
+  .total .amount {
+    font-family: var(--font-num);
+    font-weight: 500;
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .dates { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 420px) { .dates { grid-template-columns: minmax(0, 1fr); } }
+  .date { border-left: 3px solid var(--form-soft); padding-left: 10px; display: grid; gap: 2px; }
+  .date.primary { border-left-color: var(--form); }
+  .date .k { font-size: 13px; color: var(--muted); }
+  .date .v { font-family: var(--font-num); font-size: 16px; }
+  .pill {
+    display: inline-block; width: max-content;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+    border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px;
+  }
+  .pill.warn { color: var(--warn); }
+  .pill.good { color: var(--good); }
+
+  .zins { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .stamp {
+    flex: 0 0 auto;
+    color: var(--stamp);
+    border: 3px double currentColor;
+    border-radius: 6px;
+    padding: 6px 12px 7px;
+    transform: rotate(-4deg);
+    text-align: center;
+    display: grid; gap: 0;
+  }
+  .stamp .s-top, .stamp .s-bot { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .stamp .s-num { font-family: var(--font-num); font-weight: 500; font-size: 26px; line-height: 1.1; white-space: nowrap; }
+  .verdict { flex: 1 1 220px; margin: 0; font-size: 15px; }
+  .verdict strong { font-weight: 700; }
+
+  .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .copy {
+    font: inherit; font-weight: 700; font-size: 14px;
+    color: var(--sheet); background: var(--form);
+    border: 1px solid var(--form); border-radius: 3px;
+    padding: 8px 14px; cursor: pointer;
+  }
+  .copy:hover { filter: brightness(1.08); }
+  .copied { font-size: 13px; color: var(--muted); }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 70ch; }
+  footer p { margin: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .stamp { transition: transform .25s ease; }
+    .beleg:hover .stamp { transform: rotate(-2deg) scale(1.02); }
+  }
+  .zurueck { font-size: 14px; color: var(--form); text-decoration: none; font-weight: 600; }
+  .zurueck:hover { text-decoration: underline; }
+  footer { display: grid; gap: 8px; }
+  footer a { color: var(--form); }
+  footer .von { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="zurueck" href="index.html">← Alle Rechner</a>
+    <h1>Skontorechner</h1>
+    <p class="terms" id="terms"></p>
+  </header>
+
+  <main class="grid">
+    <form class="panel" id="eingaben" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="betrag">Rechnungsbetrag (brutto)</label>
+        <div class="inputwrap">
+          <input type="text" id="betrag" inputmode="decimal" value="1.000,00" aria-describedby="betrag-hint">
+          <span class="unit">€</span>
+        </div>
+        <p class="hint" id="betrag-hint">Beispielwert. Trag deinen Rechnungsbetrag ein.</p>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="skonto">Skonto</label>
+          <div class="inputwrap">
+            <input type="text" id="skonto" inputmode="decimal" value="2">
+            <span class="unit">%</span>
+          </div>
+          <div class="chips" aria-label="Skontosatz wählen">
+            <button type="button" class="chip" data-skonto="2">2 %</button>
+            <button type="button" class="chip" data-skonto="3">3 %</button>
+            <button type="button" class="chip" data-skonto="5">5 %</button>
+          </div>
+        </div>
+        <fieldset>
+          <span class="legend" id="mwst-legend">MwSt. im Betrag</span>
+          <div class="seg" role="radiogroup" aria-labelledby="mwst-legend">
+            <label><input type="radio" name="mwst" id="mwst19" value="19" checked>19 %</label>
+            <label><input type="radio" name="mwst" id="mwst7" value="7">7 %</label>
+            <label><input type="radio" name="mwst" id="mwst0" value="0">0 %</label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="frist">Skontofrist</label>
+          <div class="inputwrap">
+            <input type="text" id="frist" inputmode="numeric" value="10">
+            <span class="unit">Tage</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="ziel">Zahlungsziel</label>
+          <div class="inputwrap">
+            <input type="text" id="ziel" inputmode="numeric" value="30">
+            <span class="unit">Tage</span>
+          </div>
+        </div>
+      </div>
+      <p class="hint error" id="tage-fehler" hidden>Das Zahlungsziel muss länger sein als die Skontofrist, sonst lässt sich kein Jahreszins berechnen.</p>
+
+      <div class="row">
+        <div class="field">
+          <label for="datum">Rechnungsdatum</label>
+          <div class="inputwrap">
+            <input type="date" id="datum">
+          </div>
+        </div>
+        <div class="field">
+          <label for="kredit">Dein Kreditzins (optional)</label>
+          <div class="inputwrap">
+            <input type="text" id="kredit" inputmode="decimal" value="" placeholder="z. B. 11" aria-describedby="kredit-hint">
+            <span class="unit">% p. a.</span>
+          </div>
+          <p class="hint" id="kredit-hint">Etwa der Zins deines Kontokorrents.</p>
+        </div>
+      </div>
+    </form>
+
+    <section class="panel beleg" aria-labelledby="beleg-titel">
+      <h2 id="beleg-titel">Zahlung mit Skonto</h2>
+      <div aria-live="polite">
+        <dl class="lines">
+          <div class="line"><dt>Rechnungsbetrag</dt><dd id="o-betrag"></dd></div>
+          <div class="line minus"><dt id="o-skonto-label">Skonto</dt><dd id="o-skonto"></dd></div>
+          <div class="line sub"><dt>davon Netto</dt><dd id="o-skonto-netto"></dd></div>
+          <div class="line sub"><dt id="o-ust-label">davon Umsatzsteuer</dt><dd id="o-skonto-ust"></dd></div>
+        </dl>
+        <div class="total">
+          <span class="label">Zu zahlen</span>
+          <span class="amount" id="o-zahlbetrag"></span>
+        </div>
+      </div>
+
+      <div class="dates">
+        <div class="date primary">
+          <span class="k">Mit Skonto zahlen bis</span>
+          <span class="v" id="o-skontodatum"></span>
+          <span class="pill warn" id="o-skonto-we" hidden>Wochenende</span>
+        </div>
+        <div class="date">
+          <span class="k">Ohne Skonto fällig am</span>
+          <span class="v" id="o-zieldatum"></span>
+          <span class="pill warn" id="o-ziel-we" hidden>Wochenende</span>
+        </div>
+      </div>
+
+      <div class="zins">
+        <div class="stamp" aria-hidden="true">
+          <span class="s-top">entspricht</span>
+          <span class="s-num" id="o-zins"></span>
+          <span class="s-bot">Jahreszins</span>
+        </div>
+        <p class="verdict" id="o-urteil"></p>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="copy" id="kopieren">Ergebnis kopieren</button>
+        <span class="copied" id="kopiert" role="status"></span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Der Jahreszins ist die übliche Näherung: Skonto ÷ (100 − Skonto) × 360 ÷ (Zahlungsziel − Skontofrist). Die Aufteilung in Netto und Umsatzsteuer zeigt, um wie viel sich deine Vorsteuer verringert. Keine Steuerberatung.</p>
+    <p class="von">Ein kostenloses Werkzeug von <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a>, Gewürze aus Berlin. Deine Eingaben bleiben in deinem Browser und werden nirgends hochgeladen.</p>
+    <p class="von"><a href="index.html">Alle Rechner</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Rechnen (rein, ohne DOM) ----------
+  const parseDE = (text) => {
+    if (typeof text !== 'string') return NaN;
+    let s = text.replace(/[\s€%]/g, '');
+    if (s === '') return NaN;
+    if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+    return /^-?\d*\.?\d+$/.test(s) ? Number(s) : NaN;
+  };
+  const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+  const berechne = ({ betrag, skonto, mwst, frist, ziel, kredit }) => {
+    const ok = Number.isFinite(betrag) && betrag >= 0 && Number.isFinite(skonto) && skonto >= 0 && skonto < 100;
+    if (!ok) return null;
+    const skontoBetrag = round2(betrag * skonto / 100);
+    const zahlbetrag = round2(betrag - skontoBetrag);
+    const skontoNetto = round2(skontoBetrag / (1 + mwst / 100));
+    const skontoUst = round2(skontoBetrag - skontoNetto);
+    const tage = ziel - frist;
+    const zinsOk = Number.isFinite(tage) && tage > 0 && skonto > 0;
+    const jahreszins = zinsOk ? (skonto / (100 - skonto)) * (360 / tage) * 100 : null;
+    let kreditkosten = null, vorteil = null;
+    if (zinsOk && Number.isFinite(kredit) && kredit >= 0) {
+      kreditkosten = round2(zahlbetrag * kredit / 100 * tage / 360);
+      vorteil = round2(skontoBetrag - kreditkosten);
+    }
+    return { skontoBetrag, zahlbetrag, skontoNetto, skontoUst, tage, jahreszins, kreditkosten, vorteil };
+  };
+
+  const plusTage = (iso, tage) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m || !Number.isFinite(tage)) return null;
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + Math.round(tage)));
+  };
+
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { parseDE, berechne, plusTage }; return; }
+
+  // ---------- Anzeige ----------
+  const $ = (id) => document.getElementById(id);
+  const eur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+  const pct = (n, digits = 1) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: digits }).format(n) + ' %';
+  const datumFmt = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+  const istWochenende = (d) => d && (d.getUTCDay() === 0 || d.getUTCDay() === 6);
+
+  const felder = ['betrag', 'skonto', 'frist', 'ziel', 'kredit'];
+  const KEY = 'skontorechner.v1';
+
+  const heute = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+
+  const laden = () => {
+    try {
+      const data = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (!data) return;
+      felder.forEach((f) => { if (typeof data[f] === 'string') $(f).value = data[f]; });
+      if (['19', '7', '0'].includes(data.mwst)) $('mwst' + data.mwst).checked = true;
+      if (data.geaendert) $('betrag-hint').hidden = true;
+    } catch (e) { /* ohne Speicher weiterarbeiten */ }
+  };
+  const speichern = () => {
+    try {
+      const data = { mwst: document.querySelector('input[name="mwst"]:checked').value, geaendert: $('betrag-hint').hidden };
+      felder.forEach((f) => { data[f] = $(f).value; });
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch (e) { /* ohne Speicher weiterarbeiten */ }
+  };
+
+  let letzteZusammenfassung = '';
+
+  const zeige = () => {
+    const eingabe = {
+      betrag: parseDE($('betrag').value),
+      skonto: parseDE($('skonto').value),
+      mwst: Number(document.querySelector('input[name="mwst"]:checked').value),
+      frist: parseDE($('frist').value),
+      ziel: parseDE($('ziel').value),
+      kredit: parseDE($('kredit').value)
+    };
+    const r = berechne(eingabe);
+    const skontoDatum = plusTage($('datum').value, eingabe.frist);
+    const zielDatum = plusTage($('datum').value, eingabe.ziel);
+    const dSkonto = skontoDatum ? datumFmt.format(skontoDatum) : '–';
+    const dZiel = zielDatum ? datumFmt.format(zielDatum) : '–';
+
+    document.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(Number(c.dataset.skonto) === eingabe.skonto)));
+    $('o-skontodatum').textContent = dSkonto;
+    $('o-zieldatum').textContent = dZiel;
+    $('o-skonto-we').hidden = !istWochenende(skontoDatum);
+    $('o-ziel-we').hidden = !istWochenende(zielDatum);
+    $('tage-fehler').hidden = !(Number.isFinite(eingabe.frist) && Number.isFinite(eingabe.ziel) && eingabe.ziel <= eingabe.frist);
+
+    if (!r) {
+      ['o-betrag', 'o-skonto', 'o-skonto-netto', 'o-skonto-ust', 'o-zahlbetrag', 'o-zins'].forEach((id) => { $(id).textContent = '–'; });
+      $('o-urteil').textContent = 'Bitte einen Rechnungsbetrag und einen Skontosatz unter 100 % eintragen.';
+      $('terms').textContent = 'Trag Betrag, Skonto und Fristen ein.';
+      letzteZusammenfassung = '';
+      return;
+    }
+
+    $('o-betrag').textContent = eur.format(eingabe.betrag);
+    $('o-skonto-label').textContent = 'Skonto ' + pct(eingabe.skonto, 2);
+    $('o-skonto').textContent = '− ' + eur.format(r.skontoBetrag);
+    $('o-skonto-netto').textContent = eur.format(r.skontoNetto);
+    $('o-ust-label').textContent = 'davon Umsatzsteuer ' + pct(eingabe.mwst, 0);
+    $('o-skonto-ust').textContent = eur.format(r.skontoUst);
+    $('o-zahlbetrag').textContent = eur.format(r.zahlbetrag);
+
+    const terms = $('terms');
+    terms.textContent = '';
+    const stark = document.createElement('strong');
+    stark.textContent = pct(eingabe.skonto, 2) + ' Skonto';
+    terms.append(stark, ' bei Zahlung innerhalb von ' + (Number.isFinite(eingabe.frist) ? eingabe.frist : '–') + ' Tagen, ' + (Number.isFinite(eingabe.ziel) ? eingabe.ziel : '–') + ' Tage netto.');
+
+    let urteil;
+    if (r.jahreszins === null) {
+      $('o-zins').textContent = '–';
+      urteil = eingabe.skonto > 0 ? 'Für den Jahreszins fehlt ein Zahlungsziel, das länger ist als die Skontofrist.' : 'Ohne Skonto gibt es nichts zu vergleichen.';
+    } else {
+      $('o-zins').textContent = pct(r.jahreszins, 1);
+      const basis = 'Du zahlst ' + r.tage + ' Tage früher und sparst ' + eur.format(r.skontoBetrag) + '.';
+      if (r.vorteil === null) {
+        urteil = basis + ' Skonto lohnt sich, solange dich geliehenes Geld weniger als ' + pct(r.jahreszins, 1) + ' im Jahr kostet.';
+      } else if (r.vorteil > 0) {
+        urteil = basis + ' Selbst auf Kredit lohnt es sich: ' + r.tage + ' Tage zu ' + pct(eingabe.kredit, 2) + ' kosten ' + eur.format(r.kreditkosten) + ', es bleiben ' + eur.format(r.vorteil) + ' Vorteil.';
+      } else {
+        urteil = basis + ' Auf Kredit lohnt es sich nicht: ' + r.tage + ' Tage zu ' + pct(eingabe.kredit, 2) + ' kosten ' + eur.format(r.kreditkosten) + ', mehr als das Skonto.';
+      }
+    }
+    $('o-urteil').textContent = urteil;
+
+    letzteZusammenfassung = [
+      'Rechnungsbetrag: ' + eur.format(eingabe.betrag),
+      'Skonto ' + pct(eingabe.skonto, 2) + ': − ' + eur.format(r.skontoBetrag) + ' (netto ' + eur.format(r.skontoNetto) + ', USt ' + eur.format(r.skontoUst) + ')',
+      'Zu zahlen: ' + eur.format(r.zahlbetrag),
+      'Mit Skonto zahlen bis: ' + dSkonto,
+      'Ohne Skonto fällig am: ' + dZiel,
+      r.jahreszins === null ? '' : 'Entspricht einem Jahreszins von ' + pct(r.jahreszins, 1)
+    ].filter(Boolean).join('\n');
+  };
+
+  // ---------- Start ----------
+  $('datum').value = heute();
+  laden();
+  zeige();
+
+  $('eingaben').addEventListener('input', (event) => {
+    if (event.target.id === 'betrag') $('betrag-hint').hidden = true;
+    zeige();
+    speichern();
+  });
+  $('eingaben').addEventListener('submit', (event) => event.preventDefault());
+  document.querySelectorAll('.chip').forEach((chip) => chip.addEventListener('click', () => {
+    $('skonto').value = chip.dataset.skonto;
+    zeige();
+    speichern();
+  }));
+  $('betrag').addEventListener('blur', () => {
+    const n = parseDE($('betrag').value);
+    if (Number.isFinite(n)) $('betrag').value = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  });
+  $('kopieren').addEventListener('click', async () => {
+    const status = $('kopiert');
+    if (!letzteZusammenfassung) { status.textContent = 'Es gibt noch kein Ergebnis zum Kopieren.'; return; }
+    try {
+      await navigator.clipboard.writeText(letzteZusammenfassung);
+      status.textContent = 'Kopiert.';
+    } catch (e) {
+      status.textContent = 'Kopieren ist hier nicht möglich. Markiere die Zahlen bitte von Hand.';
+    }
+    window.setTimeout(() => { status.textContent = ''; }, 4000);
+  });
+})();
+</script>
+</body>
+</html>

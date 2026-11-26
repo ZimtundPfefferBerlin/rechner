@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kostenlose Rechner für kleine Betriebe: Skonto und Urlaub | Zimt&amp;Pfeffer</title>
+<meta name="description" content="Zwei kostenlose Rechner für den Betriebsalltag: Skontorechner mit Jahreszins und Urlaubsrechner für Teilzeit und Minijob. Ohne Anmeldung, von Zimt&amp;Pfeffer aus Berlin.">
+<style>
+  :root {
+    --paper: #f3f6f1;
+    --sheet: #ffffff;
+    --ink: #14231c;
+    --muted: #586b61;
+    --form: #2a7a54;
+    --form-soft: #d5e6dc;
+    --stamp: #2c3fb0;
+    --good: #1f7a4a;
+    --warn: #9a5800;
+    --font-ui: "Archivo", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-num: "DM Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1613;
+      --sheet: #18221d;
+      --ink: #e7efe9;
+      --muted: #97aaa0;
+      --form: #6ecb99;
+      --form-soft: #2a3b33;
+      --stamp: #98a7ff;
+      --good: #7ad7a4;
+      --warn: #f0b35a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1613;
+    --sheet: #18221d;
+    --ink: #e7efe9;
+    --muted: #97aaa0;
+    --form: #6ecb99;
+    --form-soft: #2a3b33;
+    --stamp: #98a7ff;
+    --good: #7ad7a4;
+    --warn: #f0b35a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 17px; line-height: 1.5; padding: 40px 16px 48px; }
+  .wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 28px; }
+  h1 { margin: 0; font-size: clamp(32px, 6vw, 48px); font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; text-wrap: balance; }
+  .intro { margin: 12px 0 0; max-width: 58ch; color: var(--muted); }
+  .intro a, footer a { color: var(--form); }
+  .karten { display: grid; gap: 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 640px) { .karten { grid-template-columns: minmax(0, 1fr); } }
+  .karte { display: grid; gap: 10px; align-content: start; background: var(--sheet); border: 1px solid var(--form-soft); border-top: 4px solid var(--form); padding: 22px 22px 24px; color: inherit; text-decoration: none; }
+  .karte:hover { border-color: var(--form); }
+  .karte:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .karte h2 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .karte p { margin: 0; color: var(--muted); font-size: 16px; }
+  .karte .los { margin-top: 6px; font-weight: 700; color: var(--form); font-size: 15px; }
+  .kennzahl { font-family: var(--font-num); font-size: 13px; color: var(--stamp); letter-spacing: 0.04em; text-transform: uppercase; }
+  footer { color: var(--muted); font-size: 14px; display: grid; gap: 6px; max-width: 70ch; }
+  footer p { margin: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Kleine Rechner für den Betriebsalltag</h1>
+    <p class="intro">Zwei Werkzeuge, die wir bei <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a> selbst für Rechnungen und Personal nutzen. Kostenlos, ohne Anmeldung, und alle Eingaben bleiben in deinem Browser.</p>
+  </header>
+  <main class="karten">
+    <a class="karte" href="skontorechner.html">
+      <span class="kennzahl">2 % Skonto ≈ 36,7 % Jahreszins</span>
+      <h2>Skontorechner</h2>
+      <p>Skontobetrag, Zahlbetrag und enthaltene Umsatzsteuer, dazu die Zahlungstermine und der Jahreszins, dem das Skonto entspricht.</p>
+      <span class="los">Zum Skontorechner →</span>
+    </a>
+    <a class="karte" href="urlaubsrechner.html">
+      <span class="kennzahl">3 Tage pro Woche = 12 Tage Minimum</span>
+      <h2>Urlaubsrechner</h2>
+      <p>Urlaubsanspruch für Teilzeit und Minijob, für wechselnde Arbeitstage und für Ein- oder Austritt im laufenden Jahr.</p>
+      <span class="los">Zum Urlaubsrechner →</span>
+    </a>
+  </main>
+  <footer>
+    <p>Die Rechner ersetzen keine Steuer- oder Rechtsberatung.</p>
+    <p><a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer, Gewürze aus Berlin</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
+  </footer>
+</div>
+</body>
+</html>

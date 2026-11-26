@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Urlaubsrechner für Teilzeit, Minijob und Ein- oder Austritt im Jahr</title>
+<meta name="description" content="Kostenloser Urlaubsrechner: Urlaubsanspruch für Teilzeit und Minijob, wechselnde Arbeitstage sowie Ein- und Austritt im Jahr nach Bundesurlaubsgesetz. Ohne Anmeldung.">
+<style>
+  :root {
+    /* Gleiche Formularsprache wie der Skontorechner: links der Vordruck, rechts der Beleg, ein Stempel traegt die Wochen. */
+    --paper: #f3f6f1;
+    --sheet: #ffffff;
+    --ink: #14231c;
+    --muted: #586b61;
+    --form: #2a7a54;
+    --form-soft: #d5e6dc;
+    --stamp: #2c3fb0;
+    --good: #1f7a4a;
+    --warn: #9a5800;
+    --font-ui: "Archivo", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-num: "DM Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1613;
+      --sheet: #18221d;
+      --ink: #e7efe9;
+      --muted: #97aaa0;
+      --form: #6ecb99;
+      --form-soft: #2a3b33;
+      --stamp: #98a7ff;
+      --good: #7ad7a4;
+      --warn: #f0b35a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1613;
+    --sheet: #18221d;
+    --ink: #e7efe9;
+    --muted: #97aaa0;
+    --form: #6ecb99;
+    --form-soft: #2a3b33;
+    --stamp: #98a7ff;
+    --good: #7ad7a4;
+    --warn: #f0b35a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 16px;
+    line-height: 1.45;
+    padding: 28px 16px 40px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+
+  header { display: grid; gap: 6px; }
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 800;
+    font-stretch: 75%;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+  .terms { margin: 0; max-width: 62ch; color: var(--muted); font-size: 15px; }
+  .terms strong { color: var(--ink); font-weight: 600; }
+
+  .grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel {
+    background: var(--sheet);
+    border: 1px solid var(--form-soft);
+    border-top: 4px solid var(--form);
+    padding: 20px 20px 22px;
+  }
+
+  form { display: grid; gap: 18px; }
+  .group { display: grid; gap: 14px; }
+  .group + .group { border-top: 1px solid var(--form-soft); padding-top: 16px; }
+  .group-title { margin: 0; font-size: 15px; font-weight: 700; }
+  .row { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 420px) { .row { grid-template-columns: minmax(0, 1fr); } }
+  .field { display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .field > label, .legend, .beleg h2, .liste h2 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    font-stretch: 85%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--form);
+  }
+  .inputwrap { display: flex; align-items: baseline; gap: 6px; border-bottom: 2px solid var(--form); }
+  .inputwrap:focus-within { border-bottom-color: var(--ink); }
+  .inputwrap .unit { font-family: var(--font-num); color: var(--muted); font-size: 15px; padding-bottom: 5px; white-space: nowrap; }
+  input[type="text"], input[type="date"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-num);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    padding: 6px 0 5px;
+    outline: none;
+  }
+  input[type="date"] { font-size: 17px; }
+  input#name { font-family: var(--font-ui); font-size: 18px; }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .hint.error { color: var(--warn); font-weight: 600; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip {
+    font: inherit;
+    font-family: var(--font-num);
+    font-size: 13px;
+    color: var(--form);
+    background: transparent;
+    border: 1px solid var(--form);
+    border-radius: 999px;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  .chip:hover, .chip[aria-pressed="true"] { background: var(--form); color: var(--sheet); }
+  .chip:focus-visible, .seg label:focus-within, .btn:focus-visible, .del:focus-visible, .check input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  fieldset { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; align-content: start; }
+  .seg { display: flex; flex-wrap: wrap; border: 1px solid var(--form); width: max-content; max-width: 100%; }
+  .seg label {
+    position: relative;
+    font-family: var(--font-num);
+    font-size: 14px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--form);
+    border-right: 1px solid var(--form);
+  }
+  .seg label:last-child { border-right: 0; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg label:has(input:checked) { background: var(--form); color: var(--sheet); }
+
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; cursor: pointer; }
+  .check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--form); flex: 0 0 auto; }
+  .extra { display: grid; gap: 14px; padding-left: 14px; border-left: 3px solid var(--form-soft); }
+
+  /* Beleg */
+  .beleg { display: grid; gap: 16px; }
+  .lines { display: grid; gap: 0; margin: 0; }
+  .line {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--form-soft);
+  }
+  .line dt { margin: 0; }
+  .line dd { margin: 0; font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: right; }
+  .line.sub { padding: 5px 0 5px 14px; font-size: 14px; color: var(--muted); border-bottom-style: dashed; }
+  .total {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 12px 0 4px;
+    border-top: 2px solid var(--ink);
+    margin-top: -1px;
+  }
+  .total .label { font-weight: 700; font-size: 17px; }
+  .total .amount {
+    font-family: var(--font-num);
+    font-weight: 500;
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .wochen { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .stamp {
+    flex: 0 0 auto;
+    color: var(--stamp);
+    border: 3px double currentColor;
+    border-radius: 6px;
+    padding: 6px 12px 7px;
+    transform: rotate(-4deg);
+    text-align: center;
+    display: grid; gap: 0;
+  }
+  .stamp .s-top, .stamp .s-bot { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .stamp .s-num { font-family: var(--font-num); font-weight: 500; font-size: 24px; line-height: 1.1; white-space: nowrap; }
+  .verdict { flex: 1 1 220px; margin: 0; font-size: 15px; display: grid; gap: 6px; }
+  .verdict p { margin: 0; }
+
+  .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    font: inherit; font-weight: 700; font-size: 14px;
+    color: var(--sheet); background: var(--form);
+    border: 1px solid var(--form); border-radius: 3px;
+    padding: 8px 14px; cursor: pointer;
+  }
+  .btn.ghost { color: var(--form); background: transparent; }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+  .status { font-size: 13px; color: var(--muted); }
+
+  /* Liste */
+  .liste { display: grid; gap: 12px; }
+  .liste-kopf { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .tabelle-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 10px 6px 0; border-bottom: 2px solid var(--ink); white-space: nowrap; }
+  td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--form-soft); vertical-align: baseline; }
+  td.num, th.num { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.info { color: var(--muted); font-size: 14px; }
+  td.akt, th.akt { width: 1%; padding-right: 0; }
+  .del { font: inherit; font-size: 13px; color: var(--muted); background: transparent; border: 1px solid var(--form-soft); border-radius: 3px; padding: 3px 8px; cursor: pointer; }
+  .del:hover { color: var(--warn); border-color: currentColor; }
+  .leer { margin: 0; color: var(--muted); font-size: 14px; }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 74ch; }
+  footer p { margin: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .stamp { transition: transform .25s ease; }
+    .beleg:hover .stamp { transform: rotate(-2deg) scale(1.02); }
+  }
+  .zurueck { font-size: 14px; color: var(--form); text-decoration: none; font-weight: 600; }
+  .zurueck:hover { text-decoration: underline; }
+  footer { display: grid; gap: 8px; }
+  footer a { color: var(--form); }
+  footer .von { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="zurueck" href="index.html">← Alle Rechner</a>
+    <h1>Urlaubsrechner</h1>
+    <p class="terms">Bei Teilzeit zählen die <strong>Arbeitstage pro Woche</strong>, nicht die Stunden. Am Ende hat jeder gleich viele Wochen frei.</p>
+  </header>
+
+  <main class="grid">
+    <form class="panel" id="eingaben" autocomplete="off" novalidate>
+      <div class="group">
+        <p class="group-title">Im Betrieb bei Vollzeit</p>
+        <div class="row">
+          <div class="field">
+            <label for="vt">Urlaub bei Vollzeit</label>
+            <div class="inputwrap">
+              <input type="text" id="vt" inputmode="decimal" value="20">
+              <span class="unit">Tage</span>
+            </div>
+            <div class="chips">
+              <button type="button" class="chip" id="minimum">gesetzl. Minimum</button>
+            </div>
+          </div>
+          <fieldset>
+            <span class="legend" id="wt-legend">Vollzeit-Woche</span>
+            <div class="seg" role="radiogroup" aria-labelledby="wt-legend">
+              <label><input type="radio" name="wt" id="wt5" value="5" checked>5 Tage</label>
+              <label><input type="radio" name="wt" id="wt6" value="6">6 Tage</label>
+            </div>
+          </fieldset>
+        </div>
+        <p class="hint" id="vt-hint">Voreingestellt ist das gesetzliche Minimum. Trag ein, was in deinen Verträgen steht.</p>
+        <p class="hint error" id="vt-fehler" hidden></p>
+      </div>
+
+      <div class="group">
+        <p class="group-title">Mitarbeiter</p>
+        <div class="row">
+          <div class="field">
+            <label for="name">Name (optional)</label>
+            <div class="inputwrap"><input type="text" id="name" value=""></div>
+          </div>
+          <div class="field">
+            <label for="jahr">Urlaubsjahr</label>
+            <div class="inputwrap"><input type="text" id="jahr" inputmode="numeric" value=""></div>
+          </div>
+        </div>
+
+        <fieldset>
+          <span class="legend" id="modus-legend">Arbeitstage</span>
+          <div class="seg" role="radiogroup" aria-labelledby="modus-legend">
+            <label><input type="radio" name="modus" id="modus-fest" value="fest" checked>feste Tage pro Woche</label>
+            <label><input type="radio" name="modus" id="modus-wechselnd" value="wechselnd">wechselnde Tage</label>
+          </div>
+        </fieldset>
+
+        <div class="field" id="fest-felder">
+          <label for="tage">Arbeitstage pro Woche</label>
+          <div class="inputwrap">
+            <input type="text" id="tage" inputmode="decimal" value="3">
+            <span class="unit">Tage</span>
+          </div>
+          <div class="chips" aria-label="Arbeitstage wählen">
+            <button type="button" class="chip" data-tage="1">1</button>
+            <button type="button" class="chip" data-tage="2">2</button>
+            <button type="button" class="chip" data-tage="3">3</button>
+            <button type="button" class="chip" data-tage="4">4</button>
+            <button type="button" class="chip" data-tage="5">5</button>
+            <button type="button" class="chip" data-tage="6">6</button>
+          </div>
+        </div>
+
+        <div class="field" id="wechselnd-felder" hidden>
+          <label for="jahrestage">Arbeitstage im ganzen Jahr</label>
+          <div class="inputwrap">
+            <input type="text" id="jahrestage" inputmode="decimal" value="78">
+            <span class="unit">Tage</span>
+          </div>
+          <p class="hint">Alle Tage mit Arbeitspflicht zusammengezählt, auf ein volles Jahr gerechnet. Beispiel: 78 Tage sind im Schnitt 1,5 Tage pro Woche.</p>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-title">Besonderheiten</p>
+
+        <div id="wechsel-block" class="group" style="gap:12px">
+          <label class="check"><input type="checkbox" id="wechsel-an"><span>Die Arbeitstage ändern sich in diesem Jahr</span></label>
+          <div class="extra" id="wechsel-felder" hidden>
+            <div class="row">
+              <div class="field">
+                <label for="wechsel-ab">Ab wann</label>
+                <div class="inputwrap"><input type="date" id="wechsel-ab"></div>
+              </div>
+              <div class="field">
+                <label for="tage-neu">Dann pro Woche</label>
+                <div class="inputwrap">
+                  <input type="text" id="tage-neu" inputmode="decimal" value="2">
+                  <span class="unit">Tage</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <label class="check"><input type="checkbox" id="ea-an"><span>Ein- oder Austritt in diesem Jahr</span></label>
+        <div class="extra" id="ea-felder" hidden>
+          <div class="row">
+            <div class="field">
+              <label for="eintritt">Eintritt</label>
+              <div class="inputwrap"><input type="date" id="eintritt"></div>
+            </div>
+            <div class="field">
+              <label for="austritt">Austritt (letzter Tag)</label>
+              <div class="inputwrap"><input type="date" id="austritt"></div>
+            </div>
+          </div>
+          <p class="hint">Nur ausfüllen, was zutrifft. Der Eintritt darf auch im Vorjahr liegen, dann wird die Wartezeit richtig berücksichtigt.</p>
+          <label class="check"><input type="checkbox" id="zwoelftel"><span>Der Vertrag kürzt im Ein- und Austrittsjahr auf Zwölftel</span></label>
+        </div>
+
+        <label class="check"><input type="checkbox" id="runden"><span>Bruchteile ab einem halben Tag immer aufrunden</span></label>
+      </div>
+    </form>
+
+    <section class="panel beleg" aria-labelledby="beleg-titel">
+      <h2 id="beleg-titel">Urlaubsanspruch</h2>
+      <div aria-live="polite">
+        <dl class="lines">
+          <div class="line"><dt>Vollzeit</dt><dd id="o-vollzeit"></dd></div>
+          <div class="line"><dt>Arbeitstage</dt><dd id="o-tage"></dd></div>
+          <div class="line sub" id="z-wechsel" hidden><dt>Wechsel</dt><dd id="o-wechsel"></dd></div>
+          <div class="line"><dt>Jahresanspruch</dt><dd id="o-rechenweg"></dd></div>
+          <div class="line" id="z-anteil" hidden><dt>Anteil in diesem Jahr</dt><dd id="o-anteil"></dd></div>
+          <div class="line sub" id="z-rund" hidden><dt>Aufgerundet</dt><dd id="o-rund"></dd></div>
+          <div class="line sub"><dt>Gesetzliches Minimum</dt><dd id="o-gesetz"></dd></div>
+        </dl>
+        <div class="total">
+          <span class="label" id="o-label">Urlaub</span>
+          <span class="amount" id="o-ergebnis"></span>
+        </div>
+      </div>
+
+      <div class="wochen">
+        <div class="stamp" aria-hidden="true">
+          <span class="s-top">entspricht</span>
+          <span class="s-num" id="o-wochen"></span>
+          <span class="s-bot">frei</span>
+        </div>
+        <div class="verdict" id="o-urteil"></div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn" id="merken">In die Liste übernehmen</button>
+        <span class="status" id="merk-status" role="status"></span>
+      </div>
+    </section>
+  </main>
+
+  <section class="panel liste" aria-labelledby="liste-titel">
+    <div class="liste-kopf">
+      <h2 id="liste-titel">Meine Mitarbeiter</h2>
+      <div class="actions">
+        <span class="status" id="kopier-status" role="status"></span>
+        <button type="button" class="btn ghost" id="kopieren">Liste kopieren</button>
+      </div>
+    </div>
+    <p class="leer" id="liste-leer">Noch niemand in der Liste. Rechne oben einen Mitarbeiter aus und übernimm ihn, dann hast du alle auf einen Blick. Die Liste bleibt nur in diesem Browser gespeichert.</p>
+    <div class="tabelle-wrap" id="liste-wrap" hidden>
+      <table>
+        <thead><tr><th>Name</th><th>Arbeitstage</th><th>Jahr</th><th class="num">Urlaub</th><th class="akt"><span class="visually-hidden">Aktion</span></th></tr></thead>
+        <tbody id="liste-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>Grundlage: Bundesurlaubsgesetz (§§ 3 bis 5) und die Rechtsprechung des Bundesarbeitsgerichts. Formel: Urlaubstage bei Vollzeit ÷ Arbeitstage der Vollzeit-Woche × Arbeitstage des Mitarbeiters. Vertrag oder Tarifvertrag können mehr vorsehen. Zusatzurlaub (etwa bei Schwerbehinderung) und Sonderregeln für Jugendliche sind nicht enthalten. Keine Rechtsberatung.</p>
+    <p class="von">Ein kostenloses Werkzeug von <a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer</a>, Gewürze aus Berlin. Deine Eingaben bleiben in deinem Browser und werden nirgends hochgeladen.</p>
+    <p class="von"><a href="index.html">Alle Rechner</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Rechnen (rein, ohne DOM) ----------
+  const TAG = 86400000;
+  const parseDE = (text) => {
+    if (typeof text !== 'string') return NaN;
+    let s = text.replace(/\s/g, '');
+    if (s === '') return NaN;
+    if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    return /^\d*\.?\d+$/.test(s) ? Number(s) : NaN;
+  };
+  const utc = (y, m, d) => new Date(Date.UTC(y, m, d));
+  const datum = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return null;
+    const d = utc(+m[1], +m[2] - 1, +m[3]);
+    return d.getUTCMonth() === +m[2] - 1 ? d : null;
+  };
+  const plusTage = (d, n) => new Date(d.getTime() + n * TAG);
+  const tageImMonat = (y, m) => utc(y, m + 1, 0).getUTCDate();
+
+  // Letzter Tag des k-ten Beschaeftigungsmonats (Fristende wie in § 188 BGB).
+  const monatsEnde = (start, k) => {
+    const idx = start.getUTCMonth() + k;
+    const y = start.getUTCFullYear() + Math.floor(idx / 12);
+    const m = ((idx % 12) + 12) % 12;
+    const d0 = start.getUTCDate();
+    const dim = tageImMonat(y, m);
+    return d0 <= dim ? plusTage(utc(y, m, d0), -1) : utc(y, m, dim);
+  };
+  const volleMonate = (start, ende) => {
+    if (ende < start) return 0;
+    let k = 0;
+    while (k < 600 && monatsEnde(start, k + 1) <= ende) k++;
+    return k;
+  };
+  // Jahresanteil eines Abschnitts: ganze Kalendermonate als Zwoelftel, sonst taggenau.
+  const anteil = (a, b, tageImJahr) => {
+    const ganzeMonate = a.getUTCDate() === 1 && b.getUTCDate() === tageImMonat(b.getUTCFullYear(), b.getUTCMonth());
+    if (ganzeMonate) return ((b.getUTCFullYear() - a.getUTCFullYear()) * 12 + b.getUTCMonth() - a.getUTCMonth() + 1) / 12;
+    return (Math.round((b - a) / TAG) + 1) / tageImJahr;
+  };
+  const sauber = (n) => Math.round(n * 1e6) / 1e6;
+  // § 5 Abs. 2 BUrlG: ab einem halben Tag aufrunden, darunter bleibt der Bruchteil stehen.
+  const halbAuf = (n) => {
+    const ganz = Math.floor(n + 1e-9);
+    return n - ganz >= 0.5 - 1e-9 ? ganz + 1 : sauber(n);
+  };
+
+  const berechne = (e) => {
+    const fehler = (text) => ({ fehler: text });
+    if (!Number.isInteger(e.jahr) || e.jahr < 2000 || e.jahr > 2100) return fehler('Bitte ein Urlaubsjahr eintragen, zum Beispiel 2026.');
+    if (!(e.vt > 0) || e.vt > 366) return fehler('Bitte die Urlaubstage bei Vollzeit eintragen.');
+    if (e.wt !== 5 && e.wt !== 6) return fehler('Bitte die Vollzeit-Woche wählen.');
+
+    const jStart = utc(e.jahr, 0, 1), jEnde = utc(e.jahr, 11, 31);
+    const tageImJahr = Math.round((jEnde - jStart) / TAG) + 1;
+    const E = e.eintritt || null, X = e.austritt || null;
+    if (E && X && X < E) return fehler('Der Austritt liegt vor dem Eintritt.');
+    if (E && E > jEnde) return fehler('Der Eintritt liegt nach dem gewählten Urlaubsjahr.');
+    if (X && X < jStart) return fehler('Der Austritt liegt vor dem gewählten Urlaubsjahr.');
+    const pStart = E && E > jStart ? E : jStart;
+    const pEnde = X && X < jEnde ? X : jEnde;
+    const ganzjaehrig = +pStart === +jStart && +pEnde === +jEnde;
+
+    // Arbeitstage pro Woche, bei Wechsel zeitanteilig gemittelt (abschnittsweise Berechnung).
+    let schnitt, wechsel = null;
+    if (e.modus === 'wechselnd') {
+      if (!(e.jahrestage > 0) || e.jahrestage > 366) return fehler('Bitte die Arbeitstage im ganzen Jahr eintragen.');
+      schnitt = e.jahrestage / 52;
+    } else {
+      if (!(e.tage > 0) || e.tage > 7) return fehler('Bitte die Arbeitstage pro Woche eintragen (höchstens 7).');
+      schnitt = e.tage;
+      const C = e.wechselAb || null;
+      if (C) {
+        if (!(e.tageNeu > 0) || e.tageNeu > 7) return fehler('Bitte die neuen Arbeitstage pro Woche eintragen (höchstens 7).');
+        if (C <= pStart) schnitt = e.tageNeu;
+        else if (C <= pEnde) {
+          const f1 = anteil(pStart, plusTage(C, -1), tageImJahr);
+          const f2 = anteil(C, pEnde, tageImJahr);
+          schnitt = (e.tage * f1 + e.tageNeu * f2) / (f1 + f2);
+          wechsel = { ab: C, vorher: e.tage, nachher: e.tageNeu };
+        }
+      }
+    }
+
+    // Voller Anspruch oder Teilurlaub (§§ 4, 5 BUrlG).
+    const warteEnde = E ? monatsEnde(E, 6) : null;
+    const wartezeitOk = !E || pEnde > warteEnde;
+    const austrittImJahr = !!X && X <= jEnde;
+    let art = 'voll', monate = 12, grund = '';
+    if (!wartezeitOk) {
+      art = 'teil';
+      monate = E < jStart ? volleMonate(E, pEnde) - volleMonate(E, plusTage(jStart, -1)) : volleMonate(E, pEnde);
+      grund = austrittImJahr ? 'b' : 'a';
+    } else if (austrittImJahr && X <= utc(e.jahr, 5, 30)) {
+      art = 'teil';
+      monate = volleMonate(jStart, X);
+      grund = 'c';
+    } else if (!ganzjaehrig) {
+      grund = austrittImJahr ? 'austritt2' : 'eintritt1';
+    }
+    const monateImJahr = ganzjaehrig ? 12 : volleMonate(pStart, pEnde);
+
+    const basisVertrag = e.vt / e.wt * schnitt;
+    const basisGesetz = 4 * schnitt;
+    const gesetz = art === 'voll' ? basisGesetz : halbAuf(basisGesetz * monate / 12);
+
+    let exakt, ergebnis, regel;
+    if (e.zwoelftel && !ganzjaehrig) {
+      const vertrag = basisVertrag * monateImJahr / 12;
+      regel = vertrag >= gesetz - 1e-9 ? 'vertrag' : 'gesetz';
+      exakt = Math.max(vertrag, gesetz);
+      ergebnis = exakt;
+    } else if (art === 'teil') {
+      regel = 'teil';
+      exakt = basisVertrag * monate / 12;
+      ergebnis = halbAuf(exakt);
+    } else {
+      regel = 'voll';
+      exakt = basisVertrag;
+      ergebnis = exakt;
+    }
+    if (e.runden) ergebnis = halbAuf(ergebnis);
+    exakt = sauber(exakt);
+    ergebnis = sauber(ergebnis);
+
+    return {
+      schnitt: sauber(schnitt), wechsel, ganzjaehrig, art, grund, regel, monate, monateImJahr,
+      basisVertrag: sauber(basisVertrag), basisGesetz: sauber(basisGesetz), gesetz: sauber(gesetz),
+      exakt, ergebnis, aufgerundet: ergebnis > exakt + 1e-9,
+      wochen: sauber(ergebnis / schnitt),
+      unterMinimum: e.vt < 4 * e.wt - 1e-9,
+      pStart, pEnde
+    };
+  };
+
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { parseDE, datum, monatsEnde, volleMonate, halbAuf, berechne }; return; }
+
+  // ---------- Anzeige ----------
+  const $ = (id) => document.getElementById(id);
+  const zahl = (n, stellen = 2) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: stellen }).format(n);
+  const tageText = (n) => zahl(n) + (Math.abs(n - 1) < 1e-9 ? ' Tag' : ' Tage');
+  const wochenText = (n) => zahl(n, 1) + (zahl(n, 1) === '1' ? ' Woche' : ' Wochen');
+  const datumKurz = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+  const radio = (name) => document.querySelector('input[name="' + name + '"]:checked').value;
+
+  const KEY = 'urlaubsrechner.betrieb.v1';
+  const KEY_LISTE = 'urlaubsrechner.liste.v1';
+  let liste = [];
+  let letzteWt = 5;
+  let aktuell = null;
+
+  const laden = () => {
+    try {
+      const b = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (b) {
+        if (typeof b.vt === 'string') $('vt').value = b.vt;
+        if (b.wt === '5' || b.wt === '6') $('wt' + b.wt).checked = true;
+        $('runden').checked = !!b.runden;
+        if (b.geaendert) $('vt-hint').hidden = true;
+      }
+      const l = JSON.parse(localStorage.getItem(KEY_LISTE) || '[]');
+      if (Array.isArray(l)) liste = l.filter((x) => x && typeof x.name === 'string' && typeof x.tage === 'number');
+    } catch (err) { /* ohne Speicher weiterarbeiten */ }
+    letzteWt = Number(radio('wt'));
+  };
+  const speichern = () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ vt: $('vt').value, wt: radio('wt'), runden: $('runden').checked, geaendert: $('vt-hint').hidden }));
+      localStorage.setItem(KEY_LISTE, JSON.stringify(liste));
+    } catch (err) { /* ohne Speicher weiterarbeiten */ }
+  };
+
+  const lese = () => {
+    const modus = radio('modus');
+    const ea = $('ea-an').checked;
+    const wechsel = modus === 'fest' && $('wechsel-an').checked;
+    return {
+      jahr: /^\d{4}$/.test($('jahr').value.trim()) ? Number($('jahr').value.trim()) : NaN,
+      vt: parseDE($('vt').value),
+      wt: Number(radio('wt')),
+      modus,
+      tage: parseDE($('tage').value),
+      jahrestage: parseDE($('jahrestage').value),
+      eintritt: ea ? datum($('eintritt').value) : null,
+      austritt: ea ? datum($('austritt').value) : null,
+      zwoelftel: ea && $('zwoelftel').checked,
+      wechselAb: wechsel ? datum($('wechsel-ab').value) : null,
+      tageNeu: parseDE($('tage-neu').value),
+      runden: $('runden').checked
+    };
+  };
+
+  const absatz = (ziel, texte) => {
+    ziel.textContent = '';
+    texte.filter(Boolean).forEach((t) => { const p = document.createElement('p'); p.textContent = t; ziel.append(p); });
+  };
+
+  const zeige = () => {
+    const e = lese();
+    $('fest-felder').hidden = e.modus !== 'fest';
+    $('wechselnd-felder').hidden = e.modus !== 'wechselnd';
+    $('wechsel-block').hidden = e.modus !== 'fest';
+    $('wechsel-felder').hidden = !$('wechsel-an').checked;
+    $('ea-felder').hidden = !$('ea-an').checked;
+    document.querySelectorAll('.chip[data-tage]').forEach((c) => c.setAttribute('aria-pressed', String(Number(c.dataset.tage) === e.tage)));
+    $('minimum').setAttribute('aria-pressed', String(e.vt === 4 * e.wt));
+
+    const r = berechne(e);
+    aktuell = null;
+    const name = $('name').value.trim();
+    $('o-label').textContent = 'Urlaub' + (Number.isInteger(e.jahr) ? ' ' + e.jahr : '') + (name ? ' · ' + name : '');
+
+    if (r.fehler) {
+      ['o-vollzeit', 'o-tage', 'o-rechenweg', 'o-gesetz', 'o-ergebnis', 'o-wochen'].forEach((id) => { $(id).textContent = '–'; });
+      ['z-wechsel', 'z-anteil', 'z-rund'].forEach((id) => { $(id).hidden = true; });
+      $('vt-fehler').hidden = true;
+      absatz($('o-urteil'), [r.fehler]);
+      $('merken').disabled = true;
+      return;
+    }
+
+    const vtW = e.vt / e.wt;
+    $('o-vollzeit').textContent = tageText(e.vt) + ' bei ' + e.wt + '-Tage-Woche';
+    const schnittText = (r.wechsel || e.modus === 'wechselnd' ? 'Ø ' : '') + zahl(r.schnitt) + ' pro Woche';
+    $('o-tage').textContent = schnittText;
+    $('z-wechsel').hidden = !r.wechsel;
+    if (r.wechsel) $('o-wechsel').textContent = 'bis ' + datumKurz.format(plusTage(r.wechsel.ab, -1)) + ' ' + zahl(r.wechsel.vorher) + ', ab ' + datumKurz.format(r.wechsel.ab) + ' ' + zahl(r.wechsel.nachher);
+
+    $('o-rechenweg').textContent = e.modus === 'wechselnd'
+      ? zahl(e.vt) + ' × ' + zahl(e.jahrestage) + ' ÷ ' + (e.wt * 52) + ' = ' + tageText(r.basisVertrag)
+      : zahl(e.vt) + ' ÷ ' + e.wt + ' × ' + zahl(r.schnitt) + ' = ' + tageText(r.basisVertrag);
+
+    $('z-anteil').hidden = r.ganzjaehrig;
+    if (!r.ganzjaehrig) {
+      $('o-anteil').textContent =
+        r.regel === 'teil' ? r.monate + '/12 = ' + tageText(r.exakt)
+        : r.regel === 'vertrag' ? r.monateImJahr + '/12 laut Vertrag = ' + tageText(r.exakt)
+        : r.regel === 'gesetz' ? 'gesetzliches Minimum greift'
+        : 'voller Jahresanspruch';
+    }
+    $('z-rund').hidden = !r.aufgerundet;
+    if (r.aufgerundet) $('o-rund').textContent = tageText(r.ergebnis);
+    $('o-gesetz').textContent = tageText(r.gesetz);
+    $('o-ergebnis').textContent = tageText(r.ergebnis);
+    $('o-wochen').textContent = wochenText(r.wochen);
+
+    $('vt-fehler').hidden = !r.unterMinimum;
+    if (r.unterMinimum) $('vt-fehler').textContent = 'Das liegt unter dem gesetzlichen Minimum von ' + (4 * e.wt) + ' Tagen bei einer ' + e.wt + '-Tage-Woche.';
+
+    const wer = name || 'Der Mitarbeiter';
+    const texte = [];
+    if (r.ganzjaehrig) {
+      texte.push(e.modus === 'fest' && !r.wechsel && e.tage === e.wt
+        ? wer + ' arbeitet an gleich vielen Tagen wie eine Vollzeitkraft und bekommt deshalb den vollen Urlaub, auch bei weniger Stunden.'
+        : wer + ' hat ' + wochenText(r.wochen) + ' frei, genauso lange wie eine Vollzeitkraft mit ' + wochenText(vtW) + '.');
+    } else if (r.regel === 'teil') {
+      texte.push(r.grund === 'a' ? 'Die Wartezeit von sechs Monaten wird in diesem Jahr nicht mehr erfüllt. Deshalb gibt es ein Zwölftel pro vollem Monat: ' + r.monate + ' von 12.'
+        : r.grund === 'b' ? 'Austritt vor Ablauf der sechsmonatigen Wartezeit. Deshalb gibt es ein Zwölftel pro vollem Beschäftigungsmonat: ' + r.monate + ' von 12.'
+        : 'Austritt in der ersten Jahreshälfte. Deshalb gibt es ein Zwölftel pro vollem Monat: ' + r.monate + ' von 12.');
+    } else if (r.regel === 'voll') {
+      texte.push(r.grund === 'austritt2'
+        ? 'Austritt in der zweiten Jahreshälfte nach erfüllter Wartezeit: Es bleibt beim vollen Jahresanspruch. Nur Urlaub über dem gesetzlichen Minimum darf der Vertrag kürzen.'
+        : 'Eintritt vor dem 1. Juli: Die Wartezeit von sechs Monaten endet noch in diesem Jahr, danach gilt der volle Jahresanspruch.');
+    } else if (r.regel === 'vertrag') {
+      texte.push('Laut Vertrag auf ' + r.monateImJahr + ' Zwölftel gekürzt. Das gesetzliche Minimum von ' + tageText(r.gesetz) + ' ist eingehalten.');
+    } else {
+      texte.push('Die Kürzung auf Zwölftel ergäbe weniger als das gesetzliche Minimum. Deshalb gilt das Minimum von ' + tageText(r.gesetz) + '.');
+    }
+    const bruch = Math.abs(r.ergebnis - Math.round(r.ergebnis)) > 1e-9;
+    if (r.aufgerundet && r.regel === 'teil' && !e.runden) texte.push('Der Bruchteil von mindestens einem halben Tag ist aufgerundet, wie es das Gesetz beim Teilurlaub vorsieht.');
+    else if (bruch && r.regel === 'teil') texte.push('Bruchteile unter einem halben Tag bleiben bestehen und werden zum Beispiel stundenweise gewährt.');
+    else if (bruch) texte.push('Bruchteile werden ohne eigene Regel im Vertrag weder auf- noch abgerundet. Aufrunden zugunsten des Mitarbeiters ist immer erlaubt.');
+    absatz($('o-urteil'), texte);
+
+    let info = schnittText.replace(' pro Woche', ' Tage/Woche');
+    if (e.eintritt && e.eintritt >= utc(e.jahr, 0, 1)) info += ', Eintritt ' + datumKurz.format(e.eintritt);
+    if (e.austritt && e.austritt <= utc(e.jahr, 11, 31)) info += ', Austritt ' + datumKurz.format(e.austritt);
+    aktuell = { name, info, jahr: e.jahr, tage: r.ergebnis };
+    $('merken').disabled = false;
+  };
+
+  const zeigeListe = () => {
+    const body = $('liste-body');
+    body.textContent = '';
+    $('liste-leer').hidden = liste.length > 0;
+    $('liste-wrap').hidden = liste.length === 0;
+    $('kopieren').hidden = liste.length === 0;
+    liste.forEach((eintrag, i) => {
+      const tr = document.createElement('tr');
+      const zelle = (text, klasse) => { const td = document.createElement('td'); td.textContent = text; if (klasse) td.className = klasse; tr.append(td); return td; };
+      zelle(eintrag.name);
+      zelle(eintrag.info || '', 'info');
+      zelle(String(eintrag.jahr || ''), 'info');
+      zelle(tageText(eintrag.tage), 'num');
+      const akt = zelle('', 'akt');
+      const knopf = document.createElement('button');
+      knopf.type = 'button';
+      knopf.className = 'del';
+      knopf.textContent = 'Entfernen';
+      knopf.setAttribute('aria-label', eintrag.name + ' aus der Liste entfernen');
+      knopf.addEventListener('click', () => { liste.splice(i, 1); speichern(); zeigeListe(); });
+      akt.append(knopf);
+      body.append(tr);
+    });
+  };
+
+  // ---------- Start ----------
+  $('jahr').value = String(new Date().getFullYear());
+  laden();
+  zeige();
+  zeigeListe();
+
+  $('eingaben').addEventListener('input', (event) => {
+    if (event.target.id === 'vt') $('vt-hint').hidden = true;
+    if (event.target.name === 'wt') {
+      const neu = Number(radio('wt'));
+      if (parseDE($('vt').value) === 4 * letzteWt) $('vt').value = String(4 * neu);
+      letzteWt = neu;
+    }
+    zeige();
+    speichern();
+  });
+  $('eingaben').addEventListener('submit', (event) => event.preventDefault());
+  $('minimum').addEventListener('click', () => { $('vt').value = String(4 * Number(radio('wt'))); zeige(); speichern(); });
+  document.querySelectorAll('.chip[data-tage]').forEach((chip) => chip.addEventListener('click', () => { $('tage').value = chip.dataset.tage; zeige(); }));
+
+  $('merken').addEventListener('click', () => {
+    if (!aktuell) return;
+    const eintrag = Object.assign({}, aktuell);
+    if (!eintrag.name) eintrag.name = 'Mitarbeiter ' + (liste.length + 1);
+    const vorhanden = liste.findIndex((x) => x.name === eintrag.name && x.jahr === eintrag.jahr);
+    if (vorhanden >= 0) liste[vorhanden] = eintrag; else liste.push(eintrag);
+    speichern();
+    zeigeListe();
+    $('merk-status').textContent = vorhanden >= 0 ? eintrag.name + ' aktualisiert.' : eintrag.name + ' übernommen.';
+    window.setTimeout(() => { $('merk-status').textContent = ''; }, 4000);
+  });
+
+  $('kopieren').addEventListener('click', async () => {
+    const status = $('kopier-status');
+    const text = liste.map((x) => x.name + ': ' + tageText(x.tage) + ' Urlaub ' + (x.jahr || '') + ' (' + (x.info || '') + ')').join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      status.textContent = 'Kopiert.';
+    } catch (err) {
+      status.textContent = 'Kopieren ist hier nicht möglich. Markiere die Tabelle bitte von Hand.';
+    }
+    window.setTimeout(() => { status.textContent = ''; }, 4000);
+  });
+})();
+</script>
+</body>
+</html>
