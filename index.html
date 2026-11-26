@@ -66,6 +66,16 @@
   .karte p { margin: 0; color: var(--muted); font-size: 16px; }
   .karte .los { margin-top: 6px; font-weight: 700; color: var(--form); font-size: 15px; }
   .kennzahl { font-family: var(--font-num); font-size: 13px; color: var(--stamp); letter-spacing: 0.04em; text-transform: uppercase; }
+  .shop { display: grid; gap: 12px; background: var(--sheet); border: 1px solid var(--form-soft); border-left: 4px solid var(--stamp); padding: 22px 22px 24px; }
+  .shop h2 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .shop p { margin: 0; max-width: 66ch; }
+  .shop a { color: var(--form); }
+  .shop .wege { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 4px; }
+  .shop .knopf { display: inline-block; font-weight: 700; font-size: 15px; color: var(--sheet); background: var(--form); border: 1px solid var(--form); border-radius: 3px; padding: 9px 16px; text-decoration: none; }
+  .shop .knopf:hover { filter: brightness(1.08); }
+  .shop .knopf:focus-visible, .shop a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .shop .wege a:not(.knopf) { font-weight: 600; font-size: 15px; }
+  .shop .ort { color: var(--muted); font-size: 15px; }
   footer { color: var(--muted); font-size: 14px; display: grid; gap: 6px; max-width: 70ch; }
   footer p { margin: 0; }
 </style>
@@ -112,6 +122,20 @@
     </div>
     </section>
   </main>
+  <section class="shop" aria-labelledby="shop-titel">
+    <span class="kennzahl">Wer dahintersteckt</span>
+    <h2 id="shop-titel">Zimt&amp;Pfeffer, Gewürze aus Berlin</h2>
+    <p>Wir sind ein Gewürzladen in Berlin-Mitte mit Online-Shop. Bei uns gibt es frisch gemahlenen Zimt, Pfeffer, Rohkakao und Gewürzmischungen, die wir in kleinen Chargen selbst mischen, ohne künstliche Aromen und Füllstoffe. Bestellungen sind in 1 bis 3 Werktagen bei dir.</p>
+    <div class="wege">
+      <a class="knopf" href="https://zimtundpfeffer.com/">Zum Online-Shop für Gewürze</a>
+      <a href="https://zimtundpfeffer.com/collections/zimt">Zimt</a>
+      <a href="https://zimtundpfeffer.com/collections/pfeffer">Pfeffer</a>
+      <a href="https://zimtundpfeffer.com/collections/rohkakao">Rohkakao</a>
+      <a href="https://zimtundpfeffer.com/collections/gewuerzmischungen">Gewürzmischungen</a>
+      <a href="https://zimtundpfeffer.com/blogs/rezepte-gewuerzwissen">Rezepte &amp; Gewürzwissen</a>
+    </div>
+    <p class="ort">Laden: Rungestraße 12, 10179 Berlin. Samstags findest du uns auch auf den Wochenmärkten am Boxhagener Platz und am Winterfeldtplatz. <a href="https://zimtundpfeffer.com/pages/ueber-uns">Mehr über uns</a></p>
+  </section>
   <footer>
     <p>Die Rechner ersetzen keine Steuer- oder Rechtsberatung.</p>
     <p><a href="https://zimtundpfeffer.com/">Zimt&amp;Pfeffer, Gewürze aus Berlin</a> · <a href="https://zimtundpfeffer.com/policies/legal-notice">Impressum</a> · <a href="https://zimtundpfeffer.com/policies/privacy-policy">Datenschutz</a></p>
